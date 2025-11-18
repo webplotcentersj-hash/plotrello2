@@ -1,6 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { marked } from 'marked'
 import type { Task, TeamMember } from '../types/board'
 import { BOARD_COLUMNS } from '../data/mockData'
+import { generateSprintReport, type SprintAnalysisData } from '../services/geminiService'
 import './SprintOptimizerModal.css'
 
 type SprintOptimizerModalProps = {
@@ -26,6 +28,10 @@ const SprintOptimizerModal = ({
   onClose,
   onApplyOptimization
 }: SprintOptimizerModalProps) => {
+  const [aiReport, setAiReport] = useState<string | null>(null)
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
+
   const analysis = useMemo(() => {
     // Análisis de carga de trabajo por persona
     const workloadByPerson = teamMembers.map((member) => {
@@ -157,14 +163,45 @@ const SprintOptimizerModal = ({
     }
   }
 
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true)
+    setReportError(null)
+    try {
+      const analysisData: SprintAnalysisData = {
+        tasks,
+        teamMembers,
+        workloadByPerson: analysis.workloadByPerson,
+        bottlenecksByColumn: analysis.bottlenecksByColumn,
+        blockedTasks: analysis.blockedTasks,
+        suggestions: analysis.suggestions
+      }
+      const report = await generateSprintReport(analysisData)
+      setAiReport(report)
+    } catch (error) {
+      setReportError(error instanceof Error ? error.message : 'Error al generar el informe')
+    } finally {
+      setIsGeneratingReport(false)
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="sprint-optimizer-modal" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
           <h2>Optimizador de Sprint</h2>
-          <button type="button" className="modal-close" onClick={onClose}>
-            ×
-          </button>
+          <div className="header-actions">
+            <button
+              type="button"
+              className="btn-generate-report"
+              onClick={handleGenerateReport}
+              disabled={isGeneratingReport}
+            >
+              {isGeneratingReport ? 'Generando...' : '🤖 Generar Informe con IA'}
+            </button>
+            <button type="button" className="modal-close" onClick={onClose}>
+              ×
+            </button>
+          </div>
         </header>
 
         <div className="optimizer-body">
@@ -284,6 +321,32 @@ const SprintOptimizerModal = ({
               </div>
             )}
           </section>
+
+          {/* Informe Generado por IA */}
+          {(aiReport || reportError) && (
+            <section className="optimizer-section">
+              <h3>📊 Informe Detallado Generado por IA</h3>
+              {reportError ? (
+                <div className="report-error">
+                  <p>❌ {reportError}</p>
+                  <p className="error-hint">
+                    Por favor, configura tu API key de Gemini en un archivo .env:
+                    <br />
+                    <code>VITE_GEMINI_API_KEY=tu_api_key_aqui</code>
+                  </p>
+                </div>
+              ) : (
+                <div className="ai-report">
+                  <div
+                    className="report-content"
+                    dangerouslySetInnerHTML={{
+                      __html: aiReport ? marked.parse(aiReport) : ''
+                    }}
+                  />
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
         <footer className="modal-footer">
