@@ -1,5 +1,5 @@
 import { format, subDays } from 'date-fns'
-import type { ActivityEvent, Task, TeamMember } from '../types/board'
+import type { ActivityEvent, Task, TaskStatus, TeamMember } from '../types/board'
 
 export const statusDistribution = (tasks: Task[]) => {
   return tasks.reduce<Record<string, number>>((acc, task) => {
@@ -8,13 +8,15 @@ export const statusDistribution = (tasks: Task[]) => {
   }, {})
 }
 
+const COMPLETED_STATUS: TaskStatus = 'almacen-entrega'
+
 export const throughputSeries = (activity: ActivityEvent[], days = 7) => {
   const today = new Date()
   return Array.from({ length: days }).map((_, index) => {
     const day = subDays(today, days - index - 1)
     const label = format(day, 'EEE')
     const total = activity.filter(
-      (event) => event.to === 'done' && isSameDay(day, new Date(event.timestamp))
+      (event) => event.to === COMPLETED_STATUS && isSameDay(day, new Date(event.timestamp))
     ).length
     return { label, total }
   })

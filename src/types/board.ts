@@ -1,4 +1,14 @@
-export type TaskStatus = 'backlog' | 'in-progress' | 'review' | 'done'
+export type TaskStatus =
+  | 'diseno-grafico'
+  | 'diseno-proceso'
+  | 'en-espera'
+  | 'imprenta'
+  | 'taller-imprenta'
+  | 'taller-grafico'
+  | 'instalaciones'
+  | 'metalurgica'
+  | 'finalizado-taller'
+  | 'almacen-entrega'
 export type Priority = 'alta' | 'media' | 'baja'
 
 export interface TeamMember {

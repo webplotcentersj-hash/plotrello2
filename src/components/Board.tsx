@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { DragDropContext, Droppable, type DropResult } from '@hello-pangea/dnd'
 import type { ColumnConfig, Task, TaskStatus, TeamMember } from '../types/board'
 import Column from './Column'
@@ -13,12 +13,32 @@ type BoardProps = {
 }
 
 const Board = ({ columns, tasks, allTasks, onMoveTask, members }: BoardProps) => {
+  const columnRefs = useRef<Record<TaskStatus, HTMLDivElement | null>>({
+    'diseno-grafico': null,
+    'diseno-proceso': null,
+    'en-espera': null,
+    imprenta: null,
+    'taller-imprenta': null,
+    'taller-grafico': null,
+    instalaciones: null,
+    metalurgica: null,
+    'finalizado-taller': null,
+    'almacen-entrega': null
+  })
+
   const groupedByStatus = useMemo(() => {
     return columns.reduce<Record<string, Task[]>>((acc, column) => {
       acc[column.id] = tasks.filter((task) => task.status === column.id)
       return acc
     }, {})
   }, [tasks, columns])
+
+  const totalsByStatus = useMemo(() => {
+    return columns.reduce<Record<string, number>>((acc, column) => {
+      acc[column.id] = allTasks.filter((task) => task.status === column.id).length
+      return acc
+    }, {})
+  }, [allTasks, columns])
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result
@@ -32,8 +52,26 @@ const Board = ({ columns, tasks, allTasks, onMoveTask, members }: BoardProps) =>
     onMoveTask(draggableId, destination.droppableId as TaskStatus)
   }
 
+  const scrollToColumn = (status: TaskStatus) => {
+    const target = columnRefs.current[status]
+    target?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }
+
   return (
     <div className="board-wrapper">
+      <div className="board-nav">
+        {columns.map((column) => (
+          <button
+            key={column.id}
+            type="button"
+            onClick={() => scrollToColumn(column.id)}
+            className="board-nav__chip"
+          >
+            <span>{column.label}</span>
+            <strong>{totalsByStatus[column.id] ?? 0}</strong>
+          </button>
+        ))}
+      </div>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="columns-grid">
           {columns.map((column) => (
@@ -46,6 +84,9 @@ const Board = ({ columns, tasks, allTasks, onMoveTask, members }: BoardProps) =>
                   totalColumnTasks={allTasks.filter((task) => task.status === column.id).length}
                   droppableProvided={provided}
                   isActive={snapshot.isDraggingOver}
+                  containerRef={(node) => {
+                    columnRefs.current[column.id as TaskStatus] = node
+                  }}
                 />
               )}
             </Droppable>

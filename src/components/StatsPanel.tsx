@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts'
-import type { ActivityEvent, Task, TeamMember } from '../types/board'
+import type { ActivityEvent, Task, TaskStatus, TeamMember } from '../types/board'
 import { movementByMember, statusDistribution, throughputSeries, workloadByMember } from '../utils/stats'
 import './StatsPanel.css'
 
@@ -25,8 +25,24 @@ const StatsPanel = ({ tasks, activity, teamMembers }: StatsPanelProps) => {
   const workload = workloadByMember(tasks, teamMembers)
   const movementLeaders = movementByMember(activity, teamMembers)
 
-  const completionRate = ((distribution['done'] ?? 0) / Math.max(tasks.length, 1)) * 100
-  const focusIndicator = ((distribution['in-progress'] ?? 0) / Math.max(tasks.length, 1)) * 100
+  const COMPLETED_STATUS: TaskStatus = 'almacen-entrega'
+  const EXECUTION_STATUSES: TaskStatus[] = [
+    'diseno-proceso',
+    'imprenta',
+    'taller-imprenta',
+    'taller-grafico',
+    'instalaciones',
+    'metalurgica'
+  ]
+
+  const completedCount = distribution[COMPLETED_STATUS] ?? 0
+  const executionCount = EXECUTION_STATUSES.reduce(
+    (total, status) => total + (distribution[status] ?? 0),
+    0
+  )
+
+  const completionRate = (completedCount / Math.max(tasks.length, 1)) * 100
+  const focusIndicator = (executionCount / Math.max(tasks.length, 1)) * 100
 
   return (
     <section className="stats-panel">
@@ -42,12 +58,12 @@ const StatsPanel = ({ tasks, activity, teamMembers }: StatsPanelProps) => {
         <article>
           <span>Entrega confirmada</span>
           <strong>{completionRate.toFixed(0)}%</strong>
-          <small>{distribution['done'] ?? 0} tarjetas entregadas</small>
+          <small>{completedCount} tarjetas entregadas</small>
         </article>
         <article>
-          <span>Foco en ejecución</span>
+          <span>Foco en producción</span>
           <strong>{focusIndicator.toFixed(0)}%</strong>
-          <small>{distribution['in-progress'] ?? 0} tarjetas en curso</small>
+          <small>{executionCount} tarjetas en curso</small>
         </article>
       </div>
 

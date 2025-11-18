@@ -1,3 +1,4 @@
+import type { Ref } from 'react'
 import { type DroppableProvided } from '@hello-pangea/dnd'
 import type { ColumnConfig, Task, TeamMember } from '../types/board'
 import TaskCard from './TaskCard'
@@ -9,6 +10,7 @@ type ColumnProps = {
   totalColumnTasks: number
   droppableProvided: DroppableProvided
   isActive: boolean
+  containerRef: Ref<HTMLDivElement>
 }
 
 const Column = ({
@@ -17,10 +19,11 @@ const Column = ({
   members,
   totalColumnTasks,
   droppableProvided,
-  isActive
+  isActive,
+  containerRef
 }: ColumnProps) => {
   return (
-    <div className={`board-column ${isActive ? 'column-active' : ''}`}>
+    <div className={`board-column ${isActive ? 'column-active' : ''}`} ref={containerRef}>
       <header>
         <div>
           <p className="column-eyebrow">{column.label}</p>

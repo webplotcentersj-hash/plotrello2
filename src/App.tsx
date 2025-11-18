@@ -46,7 +46,7 @@ function App() {
           ...task,
           status: destination,
           updatedAt: new Date().toISOString(),
-          progress: destination === 'done' ? 100 : task.progress
+          progress: destination === 'almacen-entrega' ? 100 : task.progress
         }
       })
     )
