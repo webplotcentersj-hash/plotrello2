@@ -4,9 +4,10 @@ import './Header.css'
 type HeaderProps = {
   teamMembers: TeamMember[]
   activity: ActivityEvent[]
+  onAddNewOrder?: () => void
 }
 
-const Header = ({ teamMembers, activity }: HeaderProps) => {
+const Header = ({ teamMembers, activity, onAddNewOrder }: HeaderProps) => {
   const today = new Date()
   const movesToday = activity.filter((event) => {
     const eventDate = new Date(event.timestamp)
@@ -25,6 +26,11 @@ const Header = ({ teamMembers, activity }: HeaderProps) => {
       <div className="header-line">
         <h1>Tablero Plot Trello</h1>
         <div className="header-actions">
+          {onAddNewOrder && (
+            <button className="brand-button" onClick={onAddNewOrder}>
+              + Agregar Nueva Orden
+            </button>
+          )}
           <button className="ghost-button">Exportar métricas</button>
           <button className="brand-button">Optimizar sprint</button>
         </div>

@@ -357,3 +357,13 @@
   border-color: #ff4444;
 }
 
+.btn-create {
+  background: var(--brand);
+  color: white;
+}
+
+.btn-create:hover {
+  background: var(--brand-strong);
+  transform: translateY(-1px);
+}
+

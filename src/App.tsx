@@ -5,6 +5,7 @@ import FiltersBar from './components/FiltersBar'
 import StatsPanel from './components/StatsPanel'
 import ActivityFeed from './components/ActivityFeed'
 import TaskEditModal from './components/TaskEditModal'
+import TaskCreateModal from './components/TaskCreateModal'
 import { BOARD_COLUMNS, initialActivity, initialTasks, teamMembers } from './data/mockData'
 import type { ActivityEvent, Task, TaskStatus } from './types/board'
 import './app.css'
@@ -26,6 +27,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFocus, setStatusFocus] = useState<TaskStatus[]>([])
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -106,9 +108,33 @@ function App() {
     setTaskToEdit(null)
   }
 
+  const handleCreateTask = (newTaskData: Omit<Task, 'id'>) => {
+    const newTask: Task = {
+      ...newTaskData,
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }
+    setTasks((prev) => [newTask, ...prev])
+    setActivity((prev) => [
+      {
+        id: `create-${Date.now()}`,
+        taskId: newTask.id,
+        from: newTask.status,
+        to: newTask.status,
+        actorId: newTask.ownerId,
+        timestamp: new Date().toISOString(),
+        note: `Nueva orden creada: ${newTask.opNumber}`
+      },
+      ...prev
+    ])
+  }
+
   return (
     <div className="trello-plot-app">
-      <Header teamMembers={teamMembers} activity={activity} />
+      <Header
+        teamMembers={teamMembers}
+        activity={activity}
+        onAddNewOrder={() => setIsCreateModalOpen(true)}
+      />
       <FiltersBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -150,6 +176,14 @@ function App() {
           onClose={() => setTaskToEdit(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
+        />
+      )}
+
+      {isCreateModalOpen && (
+        <TaskCreateModal
+          teamMembers={teamMembers}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreate={handleCreateTask}
         />
       )}
     </div>
