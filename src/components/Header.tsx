@@ -22,21 +22,12 @@ const Header = ({ teamMembers, activity }: HeaderProps) => {
 
   return (
     <header className="tp-header">
-      <div>
-        <p className="header-eyebrow">Trello Plot · Inteligencia visual para squads</p>
-        <div className="header-line">
-          <h1>
-            Tablero táctico rápido <span>con estadísticas accionables</span>
-          </h1>
-          <div className="header-actions">
-            <button className="ghost-button">Exportar métricas</button>
-            <button className="brand-button">Optimizar sprint</button>
-          </div>
+      <div className="header-line">
+        <h1>Tablero Plot Trello</h1>
+        <div className="header-actions">
+          <button className="ghost-button">Exportar métricas</button>
+          <button className="brand-button">Optimizar sprint</button>
         </div>
-        <p className="header-subtitle">
-          Seguimiento tipo Trello con analítica de movimientos y foco humano. Todo con el color
-          eb671b como protagonista.
-        </p>
       </div>
 
       <div className="header-stats">
