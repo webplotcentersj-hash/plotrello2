@@ -59,20 +59,27 @@
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .ghost-button,
 .brand-button {
-  border-radius: 999px;
-  padding: 12px 20px;
+  border-radius: 12px;
+  padding: 8px 16px;
   border: 1px solid transparent;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 200ms ease, border 120ms ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .ghost-button {
@@ -84,14 +91,36 @@
 .brand-button {
   background: var(--gradient);
   color: var(--surface);
-  box-shadow: 0 12px 30px rgba(235, 103, 27, 0.3);
+  box-shadow: 0 4px 12px rgba(235, 103, 27, 0.25), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 0;
+}
+
+.brand-button:hover::before {
+  opacity: 1;
+}
+
+.brand-button > * {
+  position: relative;
+  z-index: 1;
 }
 
 .ai-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .ai-button::before {
@@ -101,18 +130,20 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
   animation: shimmer 3s infinite;
 }
 
 .tools-button {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .chat-button {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 @keyframes shimmer {
@@ -126,7 +157,26 @@
 
 .ghost-button:hover,
 .brand-button:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(235, 103, 27, 0.35), 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.ghost-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.ai-button:hover {
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.tools-button:hover {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35), 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.chat-button:hover {
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .header-stats {

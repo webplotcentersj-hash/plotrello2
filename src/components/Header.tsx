@@ -34,7 +34,7 @@ const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavi
             alt="Plot Center Logo" 
             className="header-logo"
           />
-          <h1>Tablero Plot Trello</h1>
+          <h1>Tablero Plot</h1>
         </div>
         <div className="header-actions">
           {onAddNewOrder && (
