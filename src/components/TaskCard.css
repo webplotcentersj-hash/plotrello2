@@ -1,0 +1,127 @@
+.task-card {
+  background: rgba(11, 13, 23, 0.9);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.task-card.is-dragging {
+  border-color: var(--brand);
+  box-shadow: 0 20px 45px rgba(235, 103, 27, 0.3);
+}
+
+.task-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.task-priority {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.task-card h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.task-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.task-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-tags span {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.task-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--gradient);
+  border-radius: inherit;
+}
+
+.task-card footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.owner-chip {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.owner-avatar {
+  width: 40px;
+  height: 40px;
+  background: rgba(235, 103, 27, 0.25);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+
+.owner-chip strong {
+  display: block;
+}
+
+.owner-chip small {
+  color: var(--text-muted);
+}
+
+.due-date {
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.due-date strong {
+  display: block;
+  color: var(--text-primary);
+}
+
+.priority-alta {
+  border-color: rgba(235, 103, 27, 0.6);
+}
+
+.priority-media {
+  border-color: rgba(255, 207, 92, 0.4);
+}
+
+.priority-baja {
+  border-color: rgba(125, 148, 255, 0.3);
+}
+
