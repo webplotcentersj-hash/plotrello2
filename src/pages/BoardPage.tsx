@@ -7,6 +7,7 @@ import ActivityFeed from '../components/ActivityFeed'
 import TaskEditModal from '../components/TaskEditModal'
 import TaskCreateModal from '../components/TaskCreateModal'
 import SprintOptimizerModal from '../components/SprintOptimizerModal'
+import PlotAIChat from '../components/PlotAIChat'
 import { BOARD_COLUMNS } from '../data/mockData'
 import type { ActivityEvent, Task, TaskStatus } from '../types/board'
 
@@ -43,6 +44,7 @@ const BoardPage = ({
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isOptimizerModalOpen, setIsOptimizerModalOpen] = useState(false)
+  const [isChatAIOpen, setIsChatAIOpen] = useState(false)
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -203,6 +205,7 @@ const BoardPage = ({
         onAddNewOrder={() => setIsCreateModalOpen(true)}
         onOptimizeSprint={() => setIsOptimizerModalOpen(true)}
         onNavigateToStats={onNavigateToStats}
+        onOpenChatAI={() => setIsChatAIOpen(true)}
       />
       <FiltersBar
         searchQuery={searchQuery}
@@ -262,6 +265,15 @@ const BoardPage = ({
           teamMembers={teamMembers}
           onClose={() => setIsOptimizerModalOpen(false)}
           onApplyOptimization={handleApplyOptimizations}
+        />
+      )}
+
+      {isChatAIOpen && (
+        <PlotAIChat
+          tasks={tasks}
+          teamMembers={teamMembers}
+          activity={activity}
+          onClose={() => setIsChatAIOpen(false)}
         />
       )}
     </div>

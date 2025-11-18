@@ -7,9 +7,10 @@ type HeaderProps = {
   onAddNewOrder?: () => void
   onOptimizeSprint?: () => void
   onNavigateToStats?: () => void
+  onOpenChatAI?: () => void
 }
 
-const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavigateToStats }: HeaderProps) => {
+const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavigateToStats, onOpenChatAI }: HeaderProps) => {
   const today = new Date()
   const movesToday = activity.filter((event) => {
     const eventDate = new Date(event.timestamp)
@@ -31,6 +32,11 @@ const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavi
           {onAddNewOrder && (
             <button className="brand-button" onClick={onAddNewOrder}>
               + Agregar Nueva Orden
+            </button>
+          )}
+          {onOpenChatAI && (
+            <button className="brand-button ai-button" onClick={onOpenChatAI}>
+              🤖 PlotAI
             </button>
           )}
           {onNavigateToStats && (
