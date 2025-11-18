@@ -92,6 +92,11 @@
   box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3);
 }
 
+.chat-button {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.3);
+}
+
 @keyframes shimmer {
   0% {
     left: -100%;

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import BoardPage from './pages/BoardPage'
 import StatisticsPage from './pages/StatisticsPage'
+import ChatPage from './pages/ChatPage'
 import { initialActivity, initialTasks, teamMembers } from './data/mockData'
 import type { ActivityEvent, Task } from './types/board'
 import './app.css'
@@ -42,6 +43,7 @@ function AppRoutes({
             setActivity={setActivity}
             teamMembers={teamMembers}
             onNavigateToStats={() => navigate('/statistics')}
+            onNavigateToChat={() => navigate('/chat')}
           />
         }
       />
@@ -55,6 +57,10 @@ function AppRoutes({
             onBack={() => navigate('/')}
           />
         }
+      />
+      <Route
+        path="/chat"
+        element={<ChatPage onBack={() => navigate('/')} />}
       />
     </Routes>
   )

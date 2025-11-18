@@ -27,6 +27,7 @@ type BoardPageProps = {
   setActivity: React.Dispatch<React.SetStateAction<ActivityEvent[]>>
   teamMembers: any[]
   onNavigateToStats: () => void
+  onNavigateToChat?: () => void
 }
 
 const BoardPage = ({
@@ -35,7 +36,8 @@ const BoardPage = ({
   activity,
   setActivity,
   teamMembers,
-  onNavigateToStats
+  onNavigateToStats,
+  onNavigateToChat
 }: BoardPageProps) => {
   const [ownerFilter, setOwnerFilter] = useState<string>('todos')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas')
@@ -205,6 +207,7 @@ const BoardPage = ({
         onAddNewOrder={() => setIsCreateModalOpen(true)}
         onOptimizeSprint={() => setIsOptimizerModalOpen(true)}
         onNavigateToStats={onNavigateToStats}
+        onNavigateToChat={onNavigateToChat}
         onOpenChatAI={() => setIsChatAIOpen(true)}
       />
       <FiltersBar
