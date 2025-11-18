@@ -53,6 +53,8 @@
   font-size: 0.95rem;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 200ms ease, border 120ms ease;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .ghost-button {
@@ -83,6 +85,11 @@
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   animation: shimmer 3s infinite;
+}
+
+.tools-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3);
 }
 
 @keyframes shimmer {
@@ -134,7 +141,8 @@
     justify-content: stretch;
   }
 
-  .header-actions button {
+  .header-actions button,
+  .header-actions a {
     flex: 1;
   }
 }

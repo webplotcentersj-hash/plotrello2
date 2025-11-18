@@ -49,6 +49,14 @@ const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavi
               Optimizar sprint
             </button>
           )}
+          <a
+            href="https://tools.plotcenter.com.ar/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="brand-button tools-button"
+          >
+            🔧 Herramientas
+          </a>
         </div>
       </div>
 
