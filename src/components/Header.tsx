@@ -5,9 +5,10 @@ type HeaderProps = {
   teamMembers: TeamMember[]
   activity: ActivityEvent[]
   onAddNewOrder?: () => void
+  onOptimizeSprint?: () => void
 }
 
-const Header = ({ teamMembers, activity, onAddNewOrder }: HeaderProps) => {
+const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint }: HeaderProps) => {
   const today = new Date()
   const movesToday = activity.filter((event) => {
     const eventDate = new Date(event.timestamp)
@@ -32,7 +33,11 @@ const Header = ({ teamMembers, activity, onAddNewOrder }: HeaderProps) => {
             </button>
           )}
           <button className="ghost-button">Exportar métricas</button>
-          <button className="brand-button">Optimizar sprint</button>
+          {onOptimizeSprint && (
+            <button className="brand-button" onClick={onOptimizeSprint}>
+              Optimizar sprint
+            </button>
+          )}
         </div>
       </div>
 

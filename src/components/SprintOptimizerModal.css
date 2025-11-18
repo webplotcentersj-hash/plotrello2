@@ -1,0 +1,318 @@
+.sprint-optimizer-modal {
+  background: var(--surface-card);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--surface-border);
+}
+
+.optimizer-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.optimizer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.optimizer-section h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--surface-border);
+  padding-bottom: 8px;
+}
+
+/* Carga de Trabajo */
+.workload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.workload-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.workload-card.overloaded {
+  border-color: var(--warning);
+  background: rgba(255, 207, 92, 0.1);
+}
+
+.workload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.workload-header strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.workload-badge {
+  background: var(--brand);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.workload-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workload-stats > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.workload-stats span {
+  color: var(--text-secondary);
+}
+
+.workload-stats strong {
+  color: var(--text-primary);
+}
+
+.workload-warning {
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(255, 207, 92, 0.2);
+  border: 1px solid var(--warning);
+  border-radius: 6px;
+  color: var(--warning);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Cuellos de Botella */
+.bottlenecks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bottleneck-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--danger);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.bottleneck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bottleneck-header strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.bottleneck-count {
+  background: var(--danger);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.bottleneck-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.bottleneck-warning {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+/* Sugerencias */
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-apply-all {
+  background: var(--brand);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-apply-all:hover {
+  background: var(--brand-strong);
+  transform: translateY(-1px);
+}
+
+.no-suggestions {
+  padding: 32px;
+  text-align: center;
+  background: rgba(61, 213, 152, 0.1);
+  border: 1px solid var(--success);
+  border-radius: 12px;
+  color: var(--success);
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suggestion-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.suggestion-card.impact-high {
+  border-left: 4px solid var(--danger);
+}
+
+.suggestion-card.impact-medium {
+  border-left: 4px solid var(--warning);
+}
+
+.suggestion-card.impact-low {
+  border-left: 4px solid var(--success);
+}
+
+.suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.suggestion-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.suggestion-type-label {
+  font-weight: 600;
+}
+
+.impact-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.impact-badge.impact-high {
+  background: rgba(255, 107, 107, 0.2);
+  color: var(--danger);
+}
+
+.impact-badge.impact-medium {
+  background: rgba(255, 207, 92, 0.2);
+  color: var(--warning);
+}
+
+.impact-badge.impact-low {
+  background: rgba(61, 213, 152, 0.2);
+  color: var(--success);
+}
+
+.suggestion-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-content strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.suggestion-reason {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.suggestion-change {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.change-from {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.change-arrow {
+  color: var(--brand);
+  font-weight: bold;
+}
+
+.change-to {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.btn-apply-suggestion {
+  align-self: flex-start;
+  background: rgba(235, 103, 27, 0.2);
+  color: var(--brand);
+  border: 1px solid var(--brand);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-apply-suggestion:hover {
+  background: var(--brand);
+  color: white;
+}
+

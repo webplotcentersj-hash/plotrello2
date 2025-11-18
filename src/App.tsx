@@ -6,6 +6,7 @@ import StatsPanel from './components/StatsPanel'
 import ActivityFeed from './components/ActivityFeed'
 import TaskEditModal from './components/TaskEditModal'
 import TaskCreateModal from './components/TaskCreateModal'
+import SprintOptimizerModal from './components/SprintOptimizerModal'
 import { BOARD_COLUMNS, initialActivity, initialTasks, teamMembers } from './data/mockData'
 import type { ActivityEvent, Task, TaskStatus } from './types/board'
 import './app.css'
@@ -28,6 +29,7 @@ function App() {
   const [statusFocus, setStatusFocus] = useState<TaskStatus[]>([])
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isOptimizerModalOpen, setIsOptimizerModalOpen] = useState(false)
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -128,12 +130,66 @@ function App() {
     ])
   }
 
+  const handleApplyOptimizations = (suggestions: Array<{
+    type: 'reassign' | 'move' | 'priority'
+    taskId: string
+    taskTitle: string
+    currentValue: string
+    suggestedValue: string
+    reason: string
+    impact: 'high' | 'medium' | 'low'
+  }>) => {
+    setTasks((prev) =>
+      prev.map((task) => {
+        const suggestion = suggestions.find((s) => s.taskId === task.id)
+        if (!suggestion) return task
+
+        let updatedTask = { ...task }
+
+        if (suggestion.type === 'reassign') {
+          const newOwner = teamMembers.find((m) => m.name === suggestion.suggestedValue)
+          if (newOwner) {
+            updatedTask.ownerId = newOwner.id
+          }
+        } else if (suggestion.type === 'move') {
+          const newStatus = BOARD_COLUMNS.find((col) => col.label === suggestion.suggestedValue)
+          if (newStatus) {
+            updatedTask.status = newStatus.id
+            updatedTask.assignedSector = newStatus.label
+          }
+        } else if (suggestion.type === 'priority') {
+          updatedTask.priority = suggestion.suggestedValue as any
+        }
+
+        updatedTask.updatedAt = new Date().toISOString()
+
+        // Registrar actividad
+        setActivity((prev) => [
+          {
+            id: `optimize-${Date.now()}-${task.id}`,
+            taskId: task.id,
+            from: task.status,
+            to: updatedTask.status,
+            actorId: updatedTask.ownerId,
+            timestamp: new Date().toISOString(),
+            note: `Optimización aplicada: ${suggestion.reason}`
+          },
+          ...prev
+        ])
+
+        return updatedTask
+      })
+    )
+    setIsOptimizerModalOpen(false)
+  }
+
   return (
     <div className="trello-plot-app">
       <Header
         teamMembers={teamMembers}
         activity={activity}
         onAddNewOrder={() => setIsCreateModalOpen(true)}
+        onOptimizeSprint={() => setIsOptimizerModalOpen(true)}
       />
       <FiltersBar
         searchQuery={searchQuery}
@@ -184,6 +240,15 @@ function App() {
           teamMembers={teamMembers}
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreateTask}
+        />
+      )}
+
+      {isOptimizerModalOpen && (
+        <SprintOptimizerModal
+          tasks={tasks}
+          teamMembers={teamMembers}
+          onClose={() => setIsOptimizerModalOpen(false)}
+          onApplyOptimization={handleApplyOptimizations}
         />
       )}
     </div>
