@@ -4,6 +4,7 @@ import Header from './components/Header'
 import FiltersBar from './components/FiltersBar'
 import StatsPanel from './components/StatsPanel'
 import ActivityFeed from './components/ActivityFeed'
+import TaskEditModal from './components/TaskEditModal'
 import { BOARD_COLUMNS, initialActivity, initialTasks, teamMembers } from './data/mockData'
 import type { ActivityEvent, Task, TaskStatus } from './types/board'
 import './app.css'
@@ -24,6 +25,7 @@ function App() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFocus, setStatusFocus] = useState<TaskStatus[]>([])
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null)
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -77,6 +79,33 @@ function App() {
     )
   }
 
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task)
+  }
+
+  const handleSaveTask = (updatedTask: Task) => {
+    setTasks((prev) =>
+      prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+    )
+    setActivity((prev) => [
+      {
+        id: `edit-${Date.now()}`,
+        taskId: updatedTask.id,
+        from: updatedTask.status,
+        to: updatedTask.status,
+        actorId: updatedTask.ownerId,
+        timestamp: new Date().toISOString(),
+        note: 'Tarea actualizada'
+      },
+      ...prev
+    ])
+  }
+
+  const handleDeleteTask = (taskId: string) => {
+    setTasks((prev) => prev.filter((task) => task.id !== taskId))
+    setTaskToEdit(null)
+  }
+
   return (
     <div className="trello-plot-app">
       <Header teamMembers={teamMembers} activity={activity} />
@@ -103,6 +132,8 @@ function App() {
             allTasks={tasks}
             onMoveTask={handleMoveTask}
             members={teamMembers}
+            onEditTask={handleEditTask}
+            onDeleteTask={handleDeleteTask}
           />
         </section>
 
@@ -111,6 +142,16 @@ function App() {
           <ActivityFeed activity={activity} teamMembers={teamMembers} />
         </aside>
       </main>
+
+      {taskToEdit && (
+        <TaskEditModal
+          task={taskToEdit}
+          teamMembers={teamMembers}
+          onClose={() => setTaskToEdit(null)}
+          onSave={handleSaveTask}
+          onDelete={handleDeleteTask}
+        />
+      )}
     </div>
   )
 }

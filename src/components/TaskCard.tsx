@@ -8,6 +8,8 @@ type TaskCardProps = {
   task: Task
   index: number
   owner?: TeamMember
+  onEdit?: (task: Task) => void
+  onDelete?: (taskId: string) => void
 }
 
 const formatShortDate = (value: string) =>
@@ -26,7 +28,7 @@ const formatFullDateTime = (value: string) =>
     minute: '2-digit'
   }).format(new Date(value))
 
-const TaskCard = ({ task, index, owner }: TaskCardProps) => {
+const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const worker = owner?.name ?? 'Sin asignar'
 
@@ -42,6 +44,36 @@ const TaskCard = ({ task, index, owner }: TaskCardProps) => {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
         >
+          <div className="task-actions">
+            {onEdit && (
+              <button
+                type="button"
+                className="task-action-btn task-edit"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit(task)
+                }}
+                title="Editar"
+              >
+                ✏️
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                className="task-action-btn task-delete"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (confirm('¿Estás seguro de eliminar esta tarea?')) {
+                    onDelete(task.id)
+                  }
+                }}
+                title="Eliminar"
+              >
+                🗑️
+              </button>
+            )}
+          </div>
           {task.photoUrl && (
             <div className="task-photo">
               <img src={task.photoUrl} alt={`Trabajo ${task.title}`} loading="lazy" />

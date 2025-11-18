@@ -8,6 +8,46 @@
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+.task-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.task-action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.task-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.task-edit:hover {
+  background: rgba(235, 103, 27, 0.2);
+  border-color: var(--brand);
+}
+
+.task-delete:hover {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #ff4444;
 }
 
 .task-photo {

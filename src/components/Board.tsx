@@ -10,9 +10,11 @@ type BoardProps = {
   allTasks: Task[]
   onMoveTask: (taskId: string, destination: TaskStatus) => void
   members: TeamMember[]
+  onEditTask?: (task: Task) => void
+  onDeleteTask?: (taskId: string) => void
 }
 
-const Board = ({ columns, tasks, allTasks, onMoveTask, members }: BoardProps) => {
+const Board = ({ columns, tasks, allTasks, onMoveTask, members, onEditTask, onDeleteTask }: BoardProps) => {
   const columnRefs = useRef<Record<TaskStatus, HTMLDivElement | null>>({
     'diseno-grafico': null,
     'diseno-proceso': null,
@@ -87,6 +89,8 @@ const Board = ({ columns, tasks, allTasks, onMoveTask, members }: BoardProps) =>
                   containerRef={(node) => {
                     columnRefs.current[column.id as TaskStatus] = node
                   }}
+                  onEditTask={onEditTask}
+                  onDeleteTask={onDeleteTask}
                 />
               )}
             </Droppable>

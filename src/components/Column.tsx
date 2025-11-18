@@ -11,6 +11,8 @@ type ColumnProps = {
   droppableProvided: DroppableProvided
   isActive: boolean
   containerRef: Ref<HTMLDivElement>
+  onEditTask?: (task: Task) => void
+  onDeleteTask?: (taskId: string) => void
 }
 
 const Column = ({
@@ -20,7 +22,9 @@ const Column = ({
   totalColumnTasks,
   droppableProvided,
   isActive,
-  containerRef
+  containerRef,
+  onEditTask,
+  onDeleteTask
 }: ColumnProps) => {
   return (
     <div className={`board-column ${isActive ? 'column-active' : ''}`} ref={containerRef}>
@@ -41,6 +45,8 @@ const Column = ({
             task={task}
             index={index}
             owner={members.find((member) => member.id === task.ownerId)}
+            onEdit={onEditTask}
+            onDelete={onDeleteTask}
           />
         ))}
         {droppableProvided.placeholder}
