@@ -273,7 +273,14 @@ const ChatPage = ({ onBack }: { onBack: () => void }) => {
     <div className={`chat-page ${isShaking ? 'shaking' : ''}`}>
       <div className="chat-sidebar">
         <div className="sidebar-header">
-          <h2>Plot Chat</h2>
+          <div className="sidebar-brand">
+            <img 
+              src="https://trello.plotcenter.com.ar/Group%20187.png" 
+              alt="Plot Center Logo" 
+              className="sidebar-logo"
+            />
+            <h2>Plot Chat</h2>
+          </div>
           <button className="back-button-small" onClick={onBack} title="Volver al tablero">
             ←
           </button>

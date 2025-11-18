@@ -225,9 +225,16 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
     <div className="statistics-page">
       <header className="stats-header">
         <div className="stats-header-content">
-          <button className="back-button" onClick={onBack}>
-            ← Volver al Tablero
-          </button>
+          <div className="stats-header-brand">
+            <img 
+              src="https://trello.plotcenter.com.ar/Group%20187.png" 
+              alt="Plot Center Logo" 
+              className="stats-logo"
+            />
+            <button className="back-button" onClick={onBack}>
+              ← Volver al Tablero
+            </button>
+          </div>
           <h1>Estadísticas y Reportes</h1>
         </div>
       </header>

@@ -28,7 +28,14 @@ const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavi
   return (
     <header className="tp-header">
       <div className="header-line">
-        <h1>Tablero Plot Trello</h1>
+        <div className="header-brand">
+          <img 
+            src="https://trello.plotcenter.com.ar/Group%20187.png" 
+            alt="Plot Center Logo" 
+            className="header-logo"
+          />
+          <h1>Tablero Plot Trello</h1>
+        </div>
         <div className="header-actions">
           {onAddNewOrder && (
             <button className="brand-button" onClick={onAddNewOrder}>
