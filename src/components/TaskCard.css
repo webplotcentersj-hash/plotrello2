@@ -2,6 +2,7 @@
   background: rgba(11, 13, 23, 0.9);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 4px solid transparent;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -235,14 +236,41 @@
 }
 
 .priority-alta {
-  border-color: rgba(235, 103, 27, 0.6);
+  border-left: 4px solid #ff4444;
+  background: linear-gradient(90deg, rgba(255, 68, 68, 0.1) 0%, rgba(11, 13, 23, 0.9) 8%);
+}
+
+.priority-alta .task-op {
+  color: #ff6b6b;
+}
+
+.priority-alta .progress-bar {
+  background: linear-gradient(90deg, #ff4444, #ff6b6b);
 }
 
 .priority-media {
-  border-color: rgba(255, 207, 92, 0.4);
+  border-left: 4px solid #ffcf5c;
+  background: linear-gradient(90deg, rgba(255, 207, 92, 0.1) 0%, rgba(11, 13, 23, 0.9) 8%);
+}
+
+.priority-media .task-op {
+  color: #ffcf5c;
+}
+
+.priority-media .progress-bar {
+  background: linear-gradient(90deg, #ffcf5c, #ffd93d);
 }
 
 .priority-baja {
-  border-color: rgba(125, 148, 255, 0.3);
+  border-left: 4px solid #3dd598;
+  background: linear-gradient(90deg, rgba(61, 213, 152, 0.1) 0%, rgba(11, 13, 23, 0.9) 8%);
+}
+
+.priority-baja .task-op {
+  color: #3dd598;
+}
+
+.priority-baja .progress-bar {
+  background: linear-gradient(90deg, #3dd598, #4ecdc4);
 }
 
