@@ -21,12 +21,17 @@ export interface TeamMember {
 
 export interface Task {
   id: string
+  opNumber: string
   title: string
   summary: string
   status: TaskStatus
   priority: Priority
   ownerId: string
+  createdBy: string
   tags: string[]
+  materials: string[]
+  assignedSector: string
+  photoUrl: string
   storyPoints: number
   progress: number
   createdAt: string

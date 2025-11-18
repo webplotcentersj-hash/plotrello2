@@ -39,12 +39,15 @@ function App() {
   }, [tasks, ownerFilter, priorityFilter, statusFocus, searchQuery])
 
   const handleMoveTask = (taskId: string, destination: TaskStatus) => {
+    const destinationColumn = BOARD_COLUMNS.find((column) => column.id === destination)
+
     setTasks((prev) =>
       prev.map((task) => {
         if (task.id !== taskId) return task
         return {
           ...task,
           status: destination,
+           assignedSector: destinationColumn?.label ?? task.assignedSector,
           updatedAt: new Date().toISOString(),
           progress: destination === 'almacen-entrega' ? 100 : task.progress
         }

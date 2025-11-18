@@ -10,15 +10,25 @@ type TaskCardProps = {
   owner?: TeamMember
 }
 
-const formatDate = (value: string) => {
-  return new Intl.DateTimeFormat('es-MX', {
+const formatShortDate = (value: string) =>
+  new Intl.DateTimeFormat('es-AR', {
     day: '2-digit',
-    month: 'short'
+    month: '2-digit',
+    year: '2-digit'
   }).format(new Date(value))
-}
+
+const formatFullDateTime = (value: string) =>
+  new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(value))
 
 const TaskCard = ({ task, index, owner }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const worker = owner?.name ?? 'Sin asignar'
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -32,21 +42,47 @@ const TaskCard = ({ task, index, owner }: TaskCardProps) => {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
         >
-          <header className="task-head">
-            <span className="task-id">{task.id}</span>
-            <span className="task-priority">{task.priority}</span>
-          </header>
+          {task.photoUrl && (
+            <div className="task-photo">
+              <img src={task.photoUrl} alt={`Trabajo ${task.title}`} loading="lazy" />
+            </div>
+          )}
 
-          <h4>{task.title}</h4>
+          <div className="task-meta">
+            <div className="task-op-line">
+              <span className="task-op">#{task.opNumber}</span>
+              <span className="task-date">{formatShortDate(task.dueDate)}</span>
+            </div>
+            <h4>{task.title}</h4>
+            <p className="task-created-by">Creado por: {task.createdBy}</p>
+          </div>
 
           <div className="task-body">
-            <p>{task.summary}</p>
+            <p className="task-description">{task.summary}</p>
 
-            <div className="task-tags">
-              {task.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
+            {task.materials.length > 0 && (
+              <div className="task-materials">
+                <span className="section-label">Materiales:</span>
+                <ul>
+                  {task.materials.map((material) => (
+                    <li key={material}>{material}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="task-sector">
+              <span className="section-label">Sector asignado:</span>
+              <span className="sector-pill">{task.assignedSector}</span>
             </div>
+
+            {task.tags.length > 0 && (
+              <div className="task-tags">
+                {task.tags.map((tag) => (
+                  <span key={tag}>{tag}</span>
+                ))}
+              </div>
+            )}
 
             <div className="task-progress">
               <div className="progress-track">
@@ -55,17 +91,28 @@ const TaskCard = ({ task, index, owner }: TaskCardProps) => {
               <span>{task.progress}%</span>
             </div>
 
+            <div className="task-timings">
+              <div>
+                <span>Creado</span>
+                <strong>{formatFullDateTime(task.createdAt)}</strong>
+              </div>
+              <div>
+                <span>Entrega</span>
+                <strong>{formatShortDate(task.dueDate)}</strong>
+              </div>
+            </div>
+
             <footer>
               <div className="owner-chip">
                 <div className="owner-avatar">{owner?.avatar ?? 'TP'}</div>
                 <div>
-                  <strong>{owner?.name ?? 'Sin asignar'}</strong>
-                  <small>{owner?.role ?? '—'}</small>
+                  <strong>{worker}</strong>
+                  <small>{owner?.role ?? 'Trabajador no asignado'}</small>
                 </div>
               </div>
               <div className="due-date">
-                <span>Entrega</span>
-                <strong>{formatDate(task.dueDate)}</strong>
+                <span>Último movimiento</span>
+                <strong>{formatFullDateTime(task.updatedAt)}</strong>
               </div>
             </footer>
           </div>
