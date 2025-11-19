@@ -338,6 +338,10 @@ BEGIN
 END;
 $$;
 
+-- Dar permisos para ejecutar la función
+GRANT EXECUTE ON FUNCTION public.login_usuario(text, text) TO anon;
+GRANT EXECUTE ON FUNCTION public.login_usuario(text, text) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.logout_usuario()
 RETURNS void
 LANGUAGE plpgsql
