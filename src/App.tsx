@@ -22,12 +22,16 @@ function App() {
     }
   }, [usuario, loading])
 
-  // Debug: Mostrar variables de entorno en desarrollo
+  // Debug: Mostrar variables de entorno
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('🔍 Variables de Entorno:')
-      console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NO CONFIGURADA')
-      console.log('VITE_GEMINI_API_KEY:', import.meta.env.VITE_GEMINI_API_KEY ? '✅ Configurada' : '❌ NO CONFIGURADA')
+    console.log('🔍 Variables de Entorno:')
+    console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Configurada' : '❌ NO CONFIGURADA')
+    console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Configurada' : '❌ NO CONFIGURADA')
+    console.log('VITE_SUPABASE_SCHEMA:', import.meta.env.VITE_SUPABASE_SCHEMA || 'NO CONFIGURADA')
+    console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'NO CONFIGURADA')
+    
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      console.warn('⚠️ Supabase no está configurado. La app usará datos mock o fallback.')
     }
   }, [])
 
@@ -48,13 +52,28 @@ function App() {
     return (
       <div style={{ 
         display: 'flex', 
+        flexDirection: 'column',
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
         background: 'linear-gradient(135deg, #0b0d17 0%, #1a1d2e 100%)',
         color: '#fff'
       }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid rgba(255,255,255,0.1)',
+          borderTopColor: '#eb671b',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '16px'
+        }}></div>
         <p>Cargando...</p>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     )
   }
