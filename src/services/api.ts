@@ -490,20 +490,41 @@ class ApiService {
   // ========== AUTENTICACIÓN ==========
   async login(usuario: string, password: string): Promise<ApiResponse<{ usuario: UsuarioRecord }>> {
     if (supabase) {
-      const { data, error } = await supabase.rpc('login_usuario', {
-        p_usuario: usuario,
-        p_password: password
-      })
+      try {
+        const { data, error } = await supabase.rpc('login_usuario', {
+          p_usuario: usuario,
+          p_password: password
+        })
 
-      if (error) return { success: false, error: error.message }
-      if (!data) return { success: false, error: 'Credenciales inválidas' }
+        if (error) {
+          console.error('Error en login_usuario RPC:', error)
+          return { success: false, error: `Error de autenticación: ${error.message}` }
+        }
 
-      const usuarioDb = Array.isArray(data) ? data[0] : data
+        // La función puede retornar un array vacío o null si las credenciales son inválidas
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          console.warn('Login fallido: credenciales inválidas o usuario no encontrado')
+          return { success: false, error: 'Usuario o contraseña incorrectos' }
+        }
 
-      localStorage.setItem('usuario', JSON.stringify(usuarioDb))
-      localStorage.setItem('usuario_id', usuarioDb.id.toString())
+        const usuarioDb = Array.isArray(data) ? data[0] : data
 
-      return { success: true, data: { usuario: usuarioDb } }
+        if (!usuarioDb || !usuarioDb.id) {
+          console.error('Login fallido: datos de usuario inválidos', usuarioDb)
+          return { success: false, error: 'Error al obtener datos del usuario' }
+        }
+
+        localStorage.setItem('usuario', JSON.stringify(usuarioDb))
+        localStorage.setItem('usuario_id', usuarioDb.id.toString())
+
+        return { success: true, data: { usuario: usuarioDb } }
+      } catch (err) {
+        console.error('Excepción en login:', err)
+        return { 
+          success: false, 
+          error: err instanceof Error ? err.message : 'Error inesperado al iniciar sesión' 
+        }
+      }
     }
 
     if (hasLegacyBackend) {
