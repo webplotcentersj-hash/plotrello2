@@ -1,0 +1,107 @@
+.board-wrapper {
+  overflow: hidden;
+}
+
+.board-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.board-nav__chip {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.board-nav__chip strong {
+  color: var(--text-primary);
+}
+
+.board-nav__chip:hover {
+  border-color: var(--brand);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.columns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 8px;
+}
+
+.board-column {
+  background: var(--surface-card);
+  border-radius: 18px;
+  border: 1px solid var(--surface-border);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  transition: border 120ms ease, transform 120ms ease;
+  scroll-snap-align: start;
+}
+
+.board-column header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.column-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.board-column h3 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.column-pill {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  color: #0c0e18;
+}
+
+.column-body {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.column-empty {
+  border: 1px dashed var(--surface-border);
+  border-radius: 12px;
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-muted);
+}
+
+.column-active {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+

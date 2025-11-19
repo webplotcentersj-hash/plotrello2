@@ -1,0 +1,36 @@
+.trello-plot-app {
+  min-height: 100vh;
+  padding: 32px;
+  background: radial-gradient(circle at top left, rgba(235, 103, 27, 0.08), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(146, 61, 255, 0.08), transparent 40%),
+    var(--surface);
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.board-panel {
+  background: color-mix(in srgb, var(--surface-card) 90%, transparent);
+  border: 1px solid var(--surface-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 45px rgba(5, 6, 15, 0.5);
+}
+
+.insights-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 1200px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+

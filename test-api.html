@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API - Trello Plot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+        }
+        button {
+            background: #eb671b;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #c34f0f;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            color: #3dd598;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        h1 {
+            color: #eb671b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de API - Trello Plot</h1>
+        
+        <div>
+            <h3>1. Configurar URL de API</h3>
+            <input type="text" id="apiUrl" placeholder="https://tu-dominio.hostinger.com/api" style="width: 400px;">
+            <button onclick="saveApiUrl()">Guardar URL</button>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3>2. Test de Login</h3>
+            <input type="text" id="usuario" placeholder="Usuario" value="Admin">
+            <input type="password" id="password" placeholder="Contraseña">
+            <button onclick="testLogin()">Probar Login</button>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3>3. Test de Endpoints (requiere token)</h3>
+            <button onclick="testUsuarios()">Obtener Usuarios</button>
+            <button onclick="testOrdenes()">Obtener Órdenes</button>
+            <button onclick="testEstadisticas()">Obtener Estadísticas</button>
+        </div>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Cargar URL guardada
+        const savedUrl = localStorage.getItem('apiUrl');
+        if (savedUrl) {
+            document.getElementById('apiUrl').value = savedUrl;
+        }
+
+        function saveApiUrl() {
+            const url = document.getElementById('apiUrl').value;
+            localStorage.setItem('apiUrl', url);
+            showResult('✅ URL guardada: ' + url, 'success');
+        }
+
+        function getApiUrl() {
+            return localStorage.getItem('apiUrl') || document.getElementById('apiUrl').value;
+        }
+
+        function getToken() {
+            return localStorage.getItem('auth_token');
+        }
+
+        function showResult(message, type = 'success') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result ' + type;
+            resultDiv.textContent = message;
+        }
+
+        async function testLogin() {
+            const apiUrl = getApiUrl();
+            const usuario = document.getElementById('usuario').value;
+            const password = document.getElementById('password').value;
+
+            if (!apiUrl || !usuario || !password) {
+                showResult('❌ Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            try {
+                showResult('⏳ Enviando request...', 'success');
+                
+                const response = await fetch(`${apiUrl}/auth/login.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ usuario, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    localStorage.setItem('auth_token', data.data.token);
+                    localStorage.setItem('usuario', JSON.stringify(data.data.usuario));
+                    showResult('✅ Login exitoso!\n\n' + JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResult('❌ Error en login:\n\n' + JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error de conexión:\n\n' + error.message, 'error');
+            }
+        }
+
+        async function testUsuarios() {
+            const apiUrl = getApiUrl();
+            const token = getToken();
+
+            if (!token) {
+                showResult('❌ Primero debes hacer login', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/usuarios.php`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('📊 Usuarios:\n\n' + JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('❌ Error:\n\n' + error.message, 'error');
+            }
+        }
+
+        async function testOrdenes() {
+            const apiUrl = getApiUrl();
+            const token = getToken();
+
+            if (!token) {
+                showResult('❌ Primero debes hacer login', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/ordenes.php`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('📋 Órdenes:\n\n' + JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('❌ Error:\n\n' + error.message, 'error');
+            }
+        }
+
+        async function testEstadisticas() {
+            const apiUrl = getApiUrl();
+            const token = getToken();
+
+            if (!token) {
+                showResult('❌ Primero debes hacer login', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/estadisticas.php`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                showResult('📊 Estadísticas:\n\n' + JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('❌ Error:\n\n' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+

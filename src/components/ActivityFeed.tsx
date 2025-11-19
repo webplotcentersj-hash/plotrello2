@@ -1,0 +1,53 @@
+import { formatDistanceToNow } from 'date-fns'
+import { es } from 'date-fns/locale'
+import type { ActivityEvent, TeamMember } from '../types/board'
+import './ActivityFeed.css'
+
+type ActivityFeedProps = {
+  activity: ActivityEvent[]
+  teamMembers: TeamMember[]
+}
+
+const ActivityFeed = ({ activity, teamMembers }: ActivityFeedProps) => {
+  const getMember = (id: string) => teamMembers.find((member) => member.id === id)
+
+  return (
+    <section className="activity-feed">
+      <header>
+        <div>
+          <p className="panel-title">Movimiento reciente</p>
+          <h3>Bitácora de trabajadores</h3>
+        </div>
+        <span>{activity.length} eventos</span>
+      </header>
+
+      <ul>
+        {activity.slice(0, 6).map((event) => {
+          const member = getMember(event.actorId)
+          return (
+            <li key={event.id}>
+              <div className="feed-avatar">{member?.avatar ?? 'TP'}</div>
+              <div className="feed-body">
+                <strong>{member?.name ?? 'Equipo'}</strong>
+                <p>
+                  movió <span>{event.taskId}</span> de {event.from} a {event.to}
+                </p>
+                <small>{event.note}</small>
+              </div>
+              <time>
+                {formatDistanceToNow(new Date(event.timestamp), {
+                  addSuffix: true,
+                  locale: es
+                })}
+              </time>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+export default ActivityFeed
+
+
