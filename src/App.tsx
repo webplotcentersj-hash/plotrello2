@@ -13,6 +13,16 @@ import apiService from './services/api'
 import { historialToActivity, ordenToTask } from './utils/dataMappers'
 import { supabase } from './services/supabaseClient'
 
+const DEFAULT_SECTORES: SectorRecord[] = [
+  { id: 1, nombre: 'Diseño Gráfico', color: '#FF7F50' },
+  { id: 2, nombre: 'Taller de Imprenta', color: '#8F7EF3' },
+  { id: 3, nombre: 'Taller Gráfico', color: '#4FD1C5' },
+  { id: 4, nombre: 'Instalaciones', color: '#F6AD55' },
+  { id: 5, nombre: 'Metalúrgica', color: '#63B3ED' },
+  { id: 6, nombre: 'Mostrador', color: '#E53E3E' },
+  { id: 7, nombre: 'Caja', color: '#48BB78' }
+]
+
 const mapUsuariosToTeamMembers = (usuarios: UsuarioRecord[]): TeamMember[] =>
   usuarios.map((usuario) => ({
     id: usuario.id.toString(),
@@ -31,7 +41,7 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [activity, setActivity] = useState<ActivityEvent[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [sectores, setSectores] = useState<SectorRecord[]>([])
+  const [sectores, setSectores] = useState<SectorRecord[]>(DEFAULT_SECTORES)
   const [materiales, setMateriales] = useState<MaterialRecord[]>([])
   const { usuario, loading, setUsuario } = useAuth()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -71,7 +81,7 @@ function App() {
     setTasks([])
     setActivity([])
     setTeamMembers([])
-    setSectores([])
+    setSectores(DEFAULT_SECTORES)
     setMateriales([])
   }
 
@@ -122,10 +132,10 @@ function App() {
         setDataError((prev) => prev ?? usuariosResp.error ?? 'No se pudieron cargar los usuarios')
       }
 
-      if (sectoresResp.success && sectoresResp.data) {
+      if (sectoresResp.success && sectoresResp.data && sectoresResp.data.length > 0) {
         setSectores(sectoresResp.data)
       } else {
-        setSectores([])
+        setSectores(DEFAULT_SECTORES)
         setDataError((prev) => prev ?? sectoresResp.error ?? 'No se pudieron cargar los sectores')
       }
 
