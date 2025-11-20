@@ -329,13 +329,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
-  padding-top: 16px;
+  gap: 32px;
+  padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin-top: 12px;
+  margin-top: 16px;
   min-width: 0;
   overflow: visible;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .task-toggle {
@@ -365,7 +365,8 @@
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-  max-width: 45%;
+  max-width: 40%;
+  margin-right: 8px;
 }
 
 .owner-avatar {
@@ -404,11 +405,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: 16px;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 50%;
+  max-width: 55%;
   width: auto;
+  margin-left: auto;
 }
 
 .created-by-small {
@@ -418,8 +420,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
-  padding: 2px 0;
+  line-height: 1.5;
+  padding: 4px 0;
+  margin-bottom: 4px;
 }
 
 .created-by-small strong {
@@ -436,6 +439,7 @@
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 4px;
 }
 
 .due-date span {
