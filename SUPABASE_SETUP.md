@@ -103,11 +103,18 @@ CREATE POLICY "manage_ordenes" ON ordenes_trabajo
 
 1. En Supabase Dashboard → **Storage** (menú lateral)
 2. Haz clic en **New bucket**
-3. Nombre: `archivos`
-4. Marca **Public bucket** (o configurá políticas según necesites)
+3. Nombre: `archivos` (exactamente así, en minúsculas)
+4. Marca **Public bucket** ✅
 5. Haz clic en **Create bucket**
 
-El frontend sube archivos a `archivos/ordenes/<id>/archivo.ext`.
+6. **Configurar políticas RLS (OBLIGATORIO):**
+   - Ve a **SQL Editor**
+   - Ejecuta el contenido de `supabase/patches/2024-11-21_fix_storage_policies.sql`
+   - Esto crea las políticas necesarias para permitir subir/leer archivos
+
+> **Nota:** Aunque el bucket sea público, Supabase requiere políticas RLS explícitas para permitir operaciones. Sin estas políticas verás el error "new row violates row-level security policy".
+
+El frontend sube archivos a `archivos/capturas/<uuid>.<ext>`.
 
 ### 5. Configurar variables de entorno
 

@@ -15,32 +15,19 @@ Si no puedes subir fotos, probablemente falta el bucket `archivos` en Supabase S
    - **Public bucket**: ✅ **MARCAR ESTA OPCIÓN** (muy importante)
 5. Haz clic en **Create bucket**
 
-### Paso 2: Configurar políticas (si es necesario)
+### Paso 2: Configurar políticas RLS (OBLIGATORIO)
 
-Si el bucket no es público o necesitas más control:
+**IMPORTANTE:** Aunque el bucket sea público, Supabase requiere políticas RLS para permitir operaciones.
 
+1. Ve a **Supabase → SQL Editor**
+2. Copia y pega el contenido del archivo `supabase/patches/2024-11-21_fix_storage_policies.sql`
+3. Haz clic en **RUN**
+4. ✅ Deberías ver que se crearon 4 políticas
+
+**O manualmente desde la UI:**
 1. En Storage → `archivos` → **Policies**
-2. Crea una política para permitir uploads:
-
-```sql
--- Política para permitir que cualquier usuario suba archivos
-CREATE POLICY "Allow public uploads"
-ON storage.objects
-FOR INSERT
-TO public
-WITH CHECK (bucket_id = 'archivos');
-```
-
-3. Crea otra para permitir lectura:
-
-```sql
--- Política para permitir lectura pública
-CREATE POLICY "Allow public reads"
-ON storage.objects
-FOR SELECT
-TO public
-USING (bucket_id = 'archivos');
-```
+2. Haz clic en **New Policy**
+3. Crea estas políticas una por una (o ejecuta el script SQL completo arriba)
 
 ### Paso 3: Verificar
 
