@@ -39,6 +39,9 @@ const formatCompactDateTime = (value: string) =>
 const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const worker = owner?.name ?? 'Sin asignar'
+  
+  // Detectar si hay modificaciones (updatedAt es más reciente que createdAt)
+  const hasModifications = new Date(task.updatedAt).getTime() > new Date(task.createdAt).getTime() + 1000 // +1 segundo para evitar falsos positivos
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -92,8 +95,17 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
             <div className="task-op-line">
               <span className="task-op">#{task.opNumber}</span>
               <span className="task-date">{formatShortDate(task.dueDate)}</span>
+              {hasModifications && (
+                <span className="task-notification-bell" title="Hay modificaciones recientes">🔔</span>
+              )}
             </div>
             <h4>{task.title}</h4>
+            {task.workingUser && (
+              <div className="working-user-indicator">
+                <span className="working-user-label">Trabajando:</span>
+                <strong className="working-user-name">{task.workingUser}</strong>
+              </div>
+            )}
           </div>
 
           <div className="task-body">
@@ -150,14 +162,9 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
                 </div>
               </div>
               <div className="footer-right">
-                <div className="created-by-badge">
-                  <span className="created-by-text">Creado por: <strong>{task.createdBy}</strong></span>
+                <div className="created-by-small">
+                  <span>Creado por: <strong>{task.createdBy}</strong></span>
                 </div>
-                {task.workingUser && (
-                  <div className="working-user-badge">
-                    <span className="working-user-text">Trabajando: <strong>{task.workingUser}</strong></span>
-                  </div>
-                )}
                 <div className="due-date">
                   <span>Último movimiento</span>
                   <strong>{formatCompactDateTime(task.updatedAt)}</strong>
