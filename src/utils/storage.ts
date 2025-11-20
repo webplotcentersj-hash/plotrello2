@@ -15,24 +15,11 @@ export async function uploadAttachmentAndGetUrl(file: File, folder: string = DEF
     throw new Error('Supabase no está configurado. Revisa las variables VITE_SUPABASE_*')
   }
 
-  // Verificar que el bucket existe
-  const { data: buckets, error: listError } = await supabase.storage.listBuckets()
-  if (listError) {
-    console.error('Error listando buckets:', listError)
-    throw new Error(`Error accediendo a Storage: ${listError.message}`)
-  }
-
-  const bucketExists = buckets?.some((b) => b.name === BUCKET_NAME)
-  if (!bucketExists) {
-    throw new Error(
-      `El bucket "${BUCKET_NAME}" no existe. Créalo en Supabase → Storage → New bucket (debe ser público)`
-    )
-  }
-
   const fileExt = file.name.split('.').pop() ?? 'jpg'
   const normalizedFolder = folder.replace(/^\//, '').replace(/\/$/, '') || DEFAULT_FOLDER
   const fileName = `${normalizedFolder}/${generateId()}.${fileExt}`
 
+  // Intentar subir directamente - esto es más confiable que verificar primero
   const { error: uploadError } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(fileName, file, {
@@ -43,11 +30,30 @@ export async function uploadAttachmentAndGetUrl(file: File, folder: string = DEF
 
   if (uploadError) {
     console.error('Error subiendo archivo:', uploadError)
-    if (uploadError.message.includes('new row violates row-level security')) {
+    
+    // Mensajes de error más específicos
+    if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('not found')) {
       throw new Error(
-        'Error de permisos. Verifica que el bucket sea público o que tengas las políticas RLS correctas.'
+        `El bucket "${BUCKET_NAME}" no existe o no tienes acceso. Créalo en Supabase → Storage → New bucket (debe ser público)`
       )
     }
+    
+    if (uploadError.message.includes('new row violates row-level security') || 
+        uploadError.message.includes('permission denied') ||
+        uploadError.message.includes('row-level security')) {
+      throw new Error(
+        'Error de permisos. El bucket debe ser público o necesitas políticas RLS. Ve a Supabase → Storage → archivos → Policies'
+      )
+    }
+    
+    if (uploadError.message.includes('The resource already exists')) {
+      // Si ya existe, intentar obtener la URL directamente
+      const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName)
+      if (urlData?.publicUrl) {
+        return urlData.publicUrl
+      }
+    }
+    
     throw new Error(`Error al subir archivo: ${uploadError.message}`)
   }
 
