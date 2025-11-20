@@ -55,3 +55,12 @@ export interface ChatMessage {
   timestamp: string
 }
 
+export interface ComentarioOrden {
+  id: number
+  id_orden: number
+  comentario: string
+  usuario_nombre: string
+  mencionados?: any
+  timestamp: string
+}
+

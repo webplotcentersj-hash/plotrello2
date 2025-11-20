@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import type { ActivityEvent, Task, TeamMember } from '../types/board'
-import type { MaterialRecord, SectorRecord } from '../types/api'
+import type { ComentarioOrden, HistorialMovimiento, MaterialRecord, SectorRecord } from '../types/api'
 import { uploadAttachmentAndGetUrl } from '../utils/storage'
+import apiService from '../services/api'
+import { parseTaskIdToOrdenId } from '../utils/dataMappers'
 import './TaskEditModal.css'
 
 type TaskEditModalProps = {
@@ -47,15 +49,30 @@ const TaskEditModal = ({
   const [estimatedTime, setEstimatedTime] = useState<string>('00:00')
   const [isSectorDropdownOpen, setIsSectorDropdownOpen] = useState(false)
   const [isMaterialDropdownOpen, setIsMaterialDropdownOpen] = useState(false)
+  const [fullHistory, setFullHistory] = useState<HistorialMovimiento[]>([])
+  const [comentarios, setComentarios] = useState<ComentarioOrden[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [savingComment, setSavingComment] = useState(false)
   const attachmentsRef = useRef<LocalAttachment[]>([])
   const hasPendingUploads = attachments.some((attachment) => attachment.uploading)
 
   const taskHistory = useMemo(() => {
     if (!task) return []
-    return activity
+    const fromActivity = activity
       .filter((event) => event.taskId === task.id)
+      .map((evt) => ({
+        id: parseInt(evt.id),
+        id_orden: parseTaskIdToOrdenId(task.id) || 0,
+        estado_anterior: evt.from,
+        estado_nuevo: evt.to,
+        id_usuario: parseInt(evt.actorId),
+        timestamp: evt.timestamp,
+        comentario: evt.note
+      }))
+    return [...fullHistory, ...fromActivity]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-  }, [activity, task])
+  }, [activity, task, fullHistory])
 
   useEffect(() => {
     if (task) {
@@ -95,6 +112,33 @@ const TaskEditModal = ({
         const minutes = date.getMinutes().toString().padStart(2, '0')
         setEstimatedTime(`${hours}:${minutes}`)
       }
+
+      // Cargar historial completo y comentarios
+      const ordenId = parseTaskIdToOrdenId(task.id)
+      if (ordenId) {
+        setLoadingHistory(true)
+        Promise.all([
+          apiService.getHistorialMovimientos({ ordenId, limit: 500 }),
+          apiService.getComentariosOrden(ordenId)
+        ])
+          .then(([histResp, comResp]) => {
+            if (histResp.success && histResp.data) {
+              setFullHistory(histResp.data as HistorialMovimiento[])
+            }
+            if (comResp.success && comResp.data) {
+              setComentarios(comResp.data as ComentarioOrden[])
+            }
+          })
+          .catch((err) => {
+            console.error('Error cargando historial/comentarios:', err)
+          })
+          .finally(() => {
+            setLoadingHistory(false)
+          })
+      }
+    } else {
+      setFullHistory([])
+      setComentarios([])
     }
   }, [task])
 
@@ -115,6 +159,26 @@ const TaskEditModal = ({
     } as Task
     onSave(updated)
     onClose()
+  }
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !task) return
+    const ordenId = parseTaskIdToOrdenId(task.id)
+    if (!ordenId) return
+
+    const usuarioNombre = localStorage.getItem('usuario')
+      ? JSON.parse(localStorage.getItem('usuario') || '{}').nombre || 'Usuario'
+      : 'Usuario'
+
+    setSavingComment(true)
+    const response = await apiService.addComentarioOrden(ordenId, newComment.trim(), usuarioNombre)
+    if (response.success && response.data) {
+      setComentarios((prev) => [response.data as ComentarioOrden, ...prev])
+      setNewComment('')
+    } else {
+      alert(response.error || 'No se pudo agregar el comentario')
+    }
+    setSavingComment(false)
   }
 
   const addMaterial = (nombre: string) => {
@@ -141,9 +205,6 @@ const TaskEditModal = ({
   const handleRemoveMaterial = (index: number) => {
     setMaterials(materials.filter((_, i) => i !== index))
   }
-
-  const resolveMemberName = (id: string) =>
-    teamMembers.find((member) => member.id === id)?.name ?? `Usuario #${id}`
 
   const handleAddSector = (sector: string) => {
     if (!selectedSectors.includes(sector)) {
@@ -247,6 +308,11 @@ const TaskEditModal = ({
         </header>
 
         <div className="modal-body">
+          {task.photoUrl && (
+            <div className="task-photo-preview">
+              <img src={task.photoUrl} alt={`Captura OP ${task.opNumber}`} />
+            </div>
+          )}
           <div className="form-row">
             <div className="form-group">
               <label>N° OP</label>
@@ -405,36 +471,99 @@ const TaskEditModal = ({
             />
           </div>
 
-          <div className="form-group">
-            <label>Historial de movimientos</label>
-            {taskHistory.length > 0 ? (
+          <div className="form-group history-section">
+            <label>Trazabilidad completa - Historial de movimientos</label>
+            {loadingHistory ? (
+              <p className="history-loading">Cargando historial...</p>
+            ) : taskHistory.length > 0 ? (
               <div className="history-list">
-                {taskHistory.map((entry) => (
-                  <div key={entry.id} className="history-item">
-                    <div>
-                      <strong>{resolveMemberName(entry.actorId)}</strong>
-                      <span className="history-date">
-                        {new Date(entry.timestamp).toLocaleString('es-AR')}
-                      </span>
-                    </div>
-                    <p>
-                      {entry.from !== entry.to ? (
-                        <>
-                          {entry.from} → <span className="history-state">{entry.to}</span>
-                        </>
-                      ) : (
-                        entry.note
+                {taskHistory.map((entry) => {
+                  const usuario = teamMembers.find((m) => m.id === entry.id_usuario.toString())
+                  const nombreUsuario = usuario?.name || `Usuario ${entry.id_usuario}`
+                  return (
+                    <div key={entry.id} className="history-item">
+                      <div className="history-header">
+                        <strong>{nombreUsuario}</strong>
+                        <span className="history-date">
+                          {new Date(entry.timestamp).toLocaleString('es-AR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <div className="history-content">
+                        {entry.estado_anterior && entry.estado_nuevo && entry.estado_anterior !== entry.estado_nuevo ? (
+                          <>
+                            <span className="history-from">{entry.estado_anterior}</span>
+                            <span className="history-arrow">→</span>
+                            <span className="history-to">{entry.estado_nuevo}</span>
+                          </>
+                        ) : (
+                          <span className="history-note">{entry.comentario || 'Movimiento registrado'}</span>
+                        )}
+                      </div>
+                      {entry.comentario && entry.estado_anterior !== entry.estado_nuevo && (
+                        <p className="history-comment">{entry.comentario}</p>
                       )}
-                    </p>
-                    {entry.note && entry.from === entry.to && (
-                      <p className="history-note">{entry.note}</p>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             ) : (
               <p className="history-empty">Esta orden todavía no tiene movimientos registrados.</p>
             )}
+          </div>
+
+          <div className="form-group comments-section">
+            <label>Comentarios</label>
+            <div className="comments-list">
+              {comentarios.length > 0 ? (
+                comentarios.map((comentario) => (
+                  <div key={comentario.id} className="comment-item">
+                    <div className="comment-header">
+                      <strong>{comentario.usuario_nombre}</strong>
+                      <span className="comment-date">
+                        {new Date(comentario.timestamp).toLocaleString('es-AR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <p className="comment-text">{comentario.comentario}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="comments-empty">No hay comentarios aún.</p>
+              )}
+            </div>
+            <div className="comment-input-section">
+              <textarea
+                rows={3}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escribe un comentario..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault()
+                    handleAddComment()
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="btn-add-comment"
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || savingComment}
+              >
+                {savingComment ? 'Guardando...' : 'Agregar comentario'}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">

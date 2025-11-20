@@ -614,6 +614,42 @@ class ApiService {
 
     return { success: true, data: [] }
   }
+
+  // ========== COMENTARIOS ==========
+  async getComentariosOrden(ordenId: number): Promise<ApiResponse<any[]>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('comentarios_orden')
+        .select('*')
+        .eq('id_orden', ordenId)
+        .order('timestamp', { ascending: false })
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as any[]) ?? [] }
+    }
+
+    return { success: true, data: [] }
+  }
+
+  async addComentarioOrden(ordenId: number, comentario: string, usuarioNombre: string): Promise<ApiResponse<any>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('comentarios_orden')
+        .insert({
+          id_orden: ordenId,
+          comentario,
+          usuario_nombre: usuarioNombre,
+          timestamp: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
 }
 
 function inferChatType(message: string): ChatMessageUI['tipo'] {
