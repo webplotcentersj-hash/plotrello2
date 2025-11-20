@@ -286,11 +286,18 @@ class ApiService {
         return { success: false, error: updateError.message }
       }
 
+      // Obtener nombre del usuario
+      const usuarioData = localStorage.getItem('usuario')
+      const nombreUsuario = usuarioData
+        ? JSON.parse(usuarioData).nombre || 'Usuario'
+        : 'Usuario'
+
       await supabase.from('historial_movimientos').insert({
         id_orden: id,
         estado_anterior: currentEstado,
         estado_nuevo: nuevoEstado,
         id_usuario: usuarioId,
+        nombre_usuario: nombreUsuario,
         timestamp: new Date().toISOString()
       })
 
