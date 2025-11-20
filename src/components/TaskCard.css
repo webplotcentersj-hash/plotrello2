@@ -282,13 +282,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 20px;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin-top: 8px;
   min-width: 0;
-  overflow: hidden;
-  flex-wrap: wrap;
+  overflow: visible;
+  flex-wrap: nowrap;
 }
 
 .task-toggle {
@@ -315,9 +315,10 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
+  max-width: 45%;
 }
 
 .owner-avatar {
@@ -356,10 +357,11 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
-  flex-shrink: 1;
+  gap: 10px;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 50%;
+  width: auto;
 }
 
 .created-by-badge {
@@ -373,6 +375,9 @@
   gap: 2px;
   box-shadow: 0 2px 8px rgba(235, 103, 27, 0.1);
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .created-by-badge:hover {
@@ -400,15 +405,17 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 100%;
 }
 
 .due-date {
   text-align: right;
   font-size: 0.8rem;
   color: var(--text-muted);
-  flex-shrink: 1;
+  flex-shrink: 0;
   min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .due-date span {
