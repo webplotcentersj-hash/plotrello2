@@ -28,6 +28,14 @@ const formatFullDateTime = (value: string) =>
     minute: '2-digit'
   }).format(new Date(value))
 
+const formatCompactDateTime = (value: string) =>
+  new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(value))
+
 const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const worker = owner?.name ?? 'Sin asignar'
@@ -144,7 +152,7 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
               </div>
               <div className="due-date">
                 <span>Último movimiento</span>
-                <strong>{formatFullDateTime(task.updatedAt)}</strong>
+                <strong>{formatCompactDateTime(task.updatedAt)}</strong>
               </div>
             </footer>
           </div>

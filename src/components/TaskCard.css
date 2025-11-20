@@ -293,6 +293,8 @@
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin-top: 8px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .task-toggle {
@@ -320,6 +322,8 @@
   gap: 12px;
   align-items: center;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .owner-avatar {
@@ -358,22 +362,31 @@
   text-align: right;
   font-size: 0.8rem;
   color: var(--text-muted);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 50%;
 }
 
 .due-date span {
   display: block;
   margin-bottom: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .due-date strong {
   display: block;
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .priority-alta {
