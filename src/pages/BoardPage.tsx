@@ -9,7 +9,8 @@ import TaskCreateModal from '../components/TaskCreateModal'
 import SprintOptimizerModal from '../components/SprintOptimizerModal'
 import PlotAIChat from '../components/PlotAIChat'
 import { BOARD_COLUMNS } from '../data/mockData'
-import type { ActivityEvent, Task, TaskStatus } from '../types/board'
+import type { ActivityEvent, Task, TaskStatus, TeamMember } from '../types/board'
+import type { MaterialRecord, SectorRecord } from '../types/api'
 import { useAuth } from '../hooks/useAuth'
 import apiService from '../services/api'
 import {
@@ -33,13 +34,15 @@ type BoardPageProps = {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
   activity: ActivityEvent[]
   setActivity: React.Dispatch<React.SetStateAction<ActivityEvent[]>>
-  teamMembers: any[]
+  teamMembers: TeamMember[]
   onNavigateToStats: () => void
   onNavigateToChat?: () => void
   onLogout?: () => void
   onReloadData?: () => Promise<void>
   isSyncing?: boolean
   syncError?: string | null
+  sectores: SectorRecord[]
+  materialesCatalog: MaterialRecord[]
 }
 
 const BoardPage = ({
@@ -53,7 +56,9 @@ const BoardPage = ({
   onLogout,
   onReloadData,
   isSyncing,
-  syncError
+  syncError,
+  sectores,
+  materialesCatalog
 }: BoardPageProps) => {
   const { isAdmin } = useAuth()
   const [ownerFilter, setOwnerFilter] = useState<string>('todos')
@@ -367,6 +372,8 @@ const BoardPage = ({
         <TaskEditModal
           task={taskToEdit}
           teamMembers={teamMembers}
+          sectores={sectores}
+          materiales={materialesCatalog}
           onClose={() => setTaskToEdit(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
@@ -376,6 +383,8 @@ const BoardPage = ({
       {isCreateModalOpen && (
         <TaskCreateModal
           teamMembers={teamMembers}
+          sectores={sectores}
+          materiales={materialesCatalog}
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreateTask}
         />

@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public.ordenes_trabajo (
   operario_asignado varchar(100),
   complejidad text NOT NULL DEFAULT 'Media' CHECK (complejidad IN ('Baja','Media','Alta')),
   sector text NOT NULL DEFAULT 'Taller Gráfico' CHECK (sector IN ('Taller Gráfico','Mostrador')),
+  materiales text,
   hora_estimada_entrega time,
   hora_entrega_efectiva time,
   id_usuario_creador integer REFERENCES public.usuarios(id) ON DELETE SET NULL,

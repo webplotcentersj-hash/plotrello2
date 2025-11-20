@@ -1,29 +1,30 @@
 import { useState, useEffect } from 'react'
 import type { Task, TeamMember } from '../types/board'
+import type { MaterialRecord, SectorRecord } from '../types/api'
 import './TaskEditModal.css'
 
 type TaskEditModalProps = {
   task: Task | null
   teamMembers: TeamMember[]
+  sectores: SectorRecord[]
+  materiales: MaterialRecord[]
   onClose: () => void
   onSave: (updatedTask: Task) => void
   onDelete?: (taskId: string) => void
 }
 
-const AVAILABLE_SECTORS = [
-  'Taller Gráfico',
-  'Taller de Imprenta',
-  'Instalaciones',
-  'Metalúrgica',
-  'Mostrador',
-  'Finalizado en Taller',
-  'Almacén de Entrega'
-]
-
 const COMPLEXITY_OPTIONS = ['Baja', 'Media', 'Alta']
 const PRIORITY_OPTIONS = ['Alta', 'Media', 'Baja']
 
-const TaskEditModal = ({ task, teamMembers, onClose, onSave, onDelete }: TaskEditModalProps) => {
+const TaskEditModal = ({
+  task,
+  teamMembers,
+  sectores,
+  materiales,
+  onClose,
+  onSave,
+  onDelete
+}: TaskEditModalProps) => {
   const [formData, setFormData] = useState<Partial<Task>>({})
   const [selectedSectors, setSelectedSectors] = useState<string[]>([])
   const [materials, setMaterials] = useState<Array<{ name: string; quantity: number }>>([])
@@ -76,9 +77,15 @@ const TaskEditModal = ({ task, teamMembers, onClose, onSave, onDelete }: TaskEdi
     onClose()
   }
 
+  const addMaterial = (nombre: string) => {
+    if (nombre.length < 2) return
+    if (materials.some((m) => m.name.toLowerCase() === nombre.toLowerCase())) return
+    setMaterials([...materials, { name: nombre, quantity: 1 }])
+  }
+
   const handleAddMaterial = () => {
     if (materialSearch.length >= 2) {
-      setMaterials([...materials, { name: materialSearch, quantity: 1 }])
+      addMaterial(materialSearch)
       setMaterialSearch('')
     }
   }
@@ -121,9 +128,27 @@ const TaskEditModal = ({ task, teamMembers, onClose, onSave, onDelete }: TaskEdi
     }
   }
 
-  const filteredSectors = AVAILABLE_SECTORS.filter(
-    (s) => s.toLowerCase().includes(sectorSearch.toLowerCase()) && !selectedSectors.includes(s)
-  )
+  const filteredSectors =
+    sectorSearch.length >= 1
+      ? sectores.filter(
+          (sector) =>
+            sector.nombre.toLowerCase().includes(sectorSearch.toLowerCase()) &&
+            !selectedSectors.includes(sector.nombre)
+        )
+      : sectores.filter((sector) => !selectedSectors.includes(sector.nombre)).slice(0, 8)
+
+  const filteredMaterials =
+    materialSearch.length >= 2
+      ? materiales
+          .filter((material) => {
+            const query = materialSearch.toLowerCase()
+            return (
+              material.descripcion?.toLowerCase().includes(query) ||
+              material.codigo?.toLowerCase().includes(query)
+            )
+          })
+          .slice(0, 12)
+      : []
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -250,19 +275,19 @@ const TaskEditModal = ({ task, teamMembers, onClose, onSave, onDelete }: TaskEdi
               onChange={(e) => setSectorSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && filteredSectors.length > 0) {
-                  handleAddSector(filteredSectors[0])
+                  handleAddSector(filteredSectors[0].nombre)
                 }
               }}
             />
-            {sectorSearch.length >= 2 && filteredSectors.length > 0 && (
+            {filteredSectors.length > 0 && (
               <div className="dropdown-list">
                 {filteredSectors.map((sector) => (
                   <div
-                    key={sector}
+                    key={sector.id}
                     className="dropdown-item"
-                    onClick={() => handleAddSector(sector)}
+                    onClick={() => handleAddSector(sector.nombre)}
                   >
-                    {sector}
+                    {sector.nombre}
                   </div>
                 ))}
               </div>
@@ -302,6 +327,27 @@ const TaskEditModal = ({ task, teamMembers, onClose, onSave, onDelete }: TaskEdi
                 }
               }}
             />
+            {materialSearch.length >= 2 && filteredMaterials.length > 0 && (
+              <div className="dropdown-list">
+                {filteredMaterials.map((material) => (
+                  <div
+                    key={material.id}
+                    className="dropdown-item"
+                    onClick={() => {
+                      addMaterial(material.descripcion)
+                      setMaterialSearch('')
+                    }}
+                  >
+                    <div>
+                      <strong>{material.descripcion}</strong>
+                      {material.codigo && (
+                        <div className="dropdown-subtext">{material.codigo}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {materials.length > 0 && (
               <div className="materials-list">
                 {materials.map((material, index) => (

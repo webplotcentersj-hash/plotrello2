@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import type { TeamMember } from '../types/board'
-import { teamMembers } from '../data/mockData'
 import './ChatPage.css'
 
 type ChatMessage = {
@@ -30,17 +29,23 @@ const CHANNELS: Channel[] = [
   { id: 'random', name: '# random', description: 'Conversaciones casuales' }
 ]
 
-const ChatPage = ({ onBack }: { onBack: () => void }) => {
+const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: TeamMember[] }) => {
+  const resolvedMembers =
+    teamMembers.length > 0
+      ? teamMembers
+      : [
+          {
+            id: 'user1',
+            name: 'Usuario',
+            role: 'Miembro',
+            avatar: 'U',
+            productivity: 0
+          }
+        ]
   const [currentChannel, setCurrentChannel] = useState<string>('general')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
-  const [currentUser] = useState<TeamMember>(teamMembers[0] || {
-    id: 'user1',
-    name: 'Usuario',
-    role: 'Miembro',
-    avatar: 'U',
-    productivity: 0
-  })
+  const [currentUser] = useState<TeamMember>(resolvedMembers[0])
   const [isShaking, setIsShaking] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -54,9 +59,9 @@ const ChatPage = ({ onBack }: { onBack: () => void }) => {
     const initialMessages: ChatMessage[] = [
       {
         id: '1',
-        userId: teamMembers[0]?.id || 'user1',
-        userName: teamMembers[0]?.name || 'Sistema',
-        userAvatar: teamMembers[0]?.avatar || 'S',
+        userId: resolvedMembers[0]?.id || 'user1',
+        userName: resolvedMembers[0]?.name || 'Sistema',
+        userAvatar: resolvedMembers[0]?.avatar || 'S',
         content: `¡Bienvenido al canal ${CHANNELS.find((c) => c.id === currentChannel)?.name}! 👋`,
         timestamp: new Date(Date.now() - 3600000),
         channel: currentChannel
@@ -88,7 +93,7 @@ const ChatPage = ({ onBack }: { onBack: () => void }) => {
 
     // Simular respuesta automática después de 2 segundos
     setTimeout(() => {
-      const randomMember = teamMembers[Math.floor(Math.random() * teamMembers.length)]
+      const randomMember = resolvedMembers[Math.floor(Math.random() * resolvedMembers.length)]
       if (randomMember && Math.random() > 0.7) {
         const responses = [
           'Entendido 👍',
@@ -155,11 +160,11 @@ const ChatPage = ({ onBack }: { onBack: () => void }) => {
   // Función para enviar zumbido
   const handleSendBuzz = (targetUserId?: string) => {
     // Buscar un usuario diferente al actual
-    const availableUsers = teamMembers.filter((m) => m.id !== currentUser.id)
+    const availableUsers = resolvedMembers.filter((m) => m.id !== currentUser.id)
     if (availableUsers.length === 0) return
 
     const targetUser = targetUserId 
-      ? teamMembers.find((m) => m.id === targetUserId && m.id !== currentUser.id)
+      ? resolvedMembers.find((m) => m.id === targetUserId && m.id !== currentUser.id)
       : availableUsers[Math.floor(Math.random() * availableUsers.length)]
 
     if (!targetUser) return
@@ -197,11 +202,11 @@ const ChatPage = ({ onBack }: { onBack: () => void }) => {
   // Función para enviar alerta con sirena
   const handleSendAlert = (targetUserId?: string) => {
     // Buscar un usuario diferente al actual
-    const availableUsers = teamMembers.filter((m) => m.id !== currentUser.id)
+    const availableUsers = resolvedMembers.filter((m) => m.id !== currentUser.id)
     if (availableUsers.length === 0) return
 
     const targetUser = targetUserId 
-      ? teamMembers.find((m) => m.id === targetUserId && m.id !== currentUser.id)
+      ? resolvedMembers.find((m) => m.id === targetUserId && m.id !== currentUser.id)
       : availableUsers[Math.floor(Math.random() * availableUsers.length)]
 
     if (!targetUser) return
@@ -308,10 +313,10 @@ const ChatPage = ({ onBack }: { onBack: () => void }) => {
 
         <div className="sidebar-section">
           <div className="section-header">
-            <span>MIEMBROS EN LÍNEA ({teamMembers.length})</span>
+            <span>MIEMBROS EN LÍNEA ({resolvedMembers.length})</span>
           </div>
           <div className="members-list">
-            {teamMembers.map((member) => (
+            {resolvedMembers.map((member) => (
               <div key={member.id} className="member-item">
                 <div className="member-avatar">
                   <span>{member.avatar}</span>

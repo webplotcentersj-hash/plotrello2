@@ -21,6 +21,19 @@ export interface UsuarioRecord {
   rol: 'administracion' | 'taller' | 'mostrador'
 }
 
+export interface SectorRecord {
+  id: number
+  nombre: string
+  color?: string | null
+  activo?: boolean | null
+}
+
+export interface MaterialRecord {
+  id: number
+  codigo?: string | null
+  descripcion: string
+}
+
 export interface HistorialMovimiento {
   id: number
   id_orden: number

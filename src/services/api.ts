@@ -1,6 +1,11 @@
-import { initialActivity, initialTasks, teamMembers } from '../data/mockData'
-import { mapImpactToComplejidad, mapPriorityToDb, mapStatusToEstado } from '../utils/dataMappers'
-import type { HistorialMovimiento, OrdenTrabajo, UsuarioRecord } from '../types/api'
+import { BOARD_COLUMNS } from '../data/mockData'
+import type {
+  HistorialMovimiento,
+  MaterialRecord,
+  OrdenTrabajo,
+  SectorRecord,
+  UsuarioRecord
+} from '../types/api'
 import { supabase } from './supabaseClient'
 
 const LEGACY_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -23,47 +28,21 @@ type ChatMessageUI = {
   timestamp: string
 }
 
-const fallbackOrdenes: OrdenTrabajo[] = initialTasks.map((task, index) => ({
+const fallbackOrdenes: OrdenTrabajo[] = []
+
+const fallbackHistorial: HistorialMovimiento[] = []
+
+const fallbackUsuarios: UsuarioRecord[] = []
+
+const fallbackSectores: SectorRecord[] = BOARD_COLUMNS.map((col, index) => ({
   id: index + 1,
-  numero_op: task.opNumber,
-  cliente: task.title,
-  descripcion: task.summary,
-  estado: mapStatusToEstado(task.status),
-  prioridad: mapPriorityToDb(task.priority),
-  fecha_creacion: task.createdAt,
-  fecha_entrega: task.dueDate,
-  fecha_ingreso: task.updatedAt,
-  operario_asignado: task.ownerId,
-  complejidad: mapImpactToComplejidad(task.impact),
-  sector: task.assignedSector,
-  materiales: task.materials?.join(', '),
-  nombre_creador: task.createdBy
+  nombre: col.label,
+  color: col.accent
 }))
 
-const fallbackHistorial: HistorialMovimiento[] = initialActivity.map((event, index) => ({
-  id: index + 1,
-  id_orden: fallbackOrdenes[index % fallbackOrdenes.length]?.id ?? index + 1,
-  estado_anterior: mapStatusToEstado(event.from),
-  estado_nuevo: mapStatusToEstado(event.to),
-  id_usuario: index + 1,
-  timestamp: event.timestamp,
-  comentario: event.note
-}))
+const fallbackMateriales: MaterialRecord[] = []
 
-const fallbackUsuarios: UsuarioRecord[] = teamMembers.map((member, index) => ({
-  id: index + 1,
-  nombre: member.name,
-  rol: (index % 2 === 0 ? 'administracion' : 'taller')
-}))
-
-const fallbackMensajes: ChatMessageUI[] = initialActivity.slice(0, 4).map((event, index) => ({
-  id: index + 1,
-  canal: 'general',
-  usuario_id: index + 1,
-  contenido: event.note || 'Actualización',
-  tipo: 'message',
-  timestamp: event.timestamp
-}))
+const fallbackMensajes: ChatMessageUI[] = []
 
 const chatChannelToRoom: Record<string, number> = {
   general: 1,
@@ -119,6 +98,7 @@ class ApiService {
         .order('fecha_creacion', { ascending: false })
 
       if (error) {
+        console.error('Supabase getOrdenes error:', error)
         return { success: false, error: error.message }
       }
 
@@ -310,6 +290,46 @@ class ApiService {
 
     return this.handleFallback(fallbackUsuarios)
   }
+
+  async getSectores(): Promise<ApiResponse<SectorRecord[]>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('sectores')
+        .select('id, nombre, color, activo, orden_visualizacion')
+        .order('orden_visualizacion', { ascending: true })
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as SectorRecord[]) ?? [] }
+    }
+
+    return this.handleFallback(fallbackSectores)
+  }
+
+  async getMateriales(search?: string): Promise<ApiResponse<MaterialRecord[]>> {
+    if (supabase) {
+      let query = supabase.from('materiales').select('id, codigo, descripcion').order('descripcion', {
+        ascending: true
+      })
+
+      if (search && search.trim().length >= 2) {
+        query = query.ilike('descripcion', `%${search.trim()}%`)
+      }
+
+      const { data, error } = await query
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as MaterialRecord[]) ?? [] }
+    }
+
+    if (search && search.trim()) {
+      const filtered = fallbackMateriales.filter((material) =>
+        material.descripcion.toLowerCase().includes(search.trim().toLowerCase())
+      )
+      return { success: true, data: filtered }
+    }
+
+    return this.handleFallback(fallbackMateriales)
+  }
+
 
   async getUsuario(id: number): Promise<ApiResponse<UsuarioRecord>> {
     if (supabase) {

@@ -1,27 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Task, TeamMember, TaskStatus } from '../types/board'
+import type { MaterialRecord, SectorRecord } from '../types/api'
 import './TaskEditModal.css'
 
 type TaskCreateModalProps = {
   teamMembers: TeamMember[]
+  sectores: SectorRecord[]
+  materiales: MaterialRecord[]
   onClose: () => void
   onCreate: (newTask: Omit<Task, 'id'>) => void
 }
 
-const AVAILABLE_SECTORS = [
-  'Taller Gráfico',
-  'Taller de Imprenta',
-  'Instalaciones',
-  'Metalúrgica',
-  'Mostrador',
-  'Finalizado en Taller',
-  'Almacén de Entrega'
-]
-
 const COMPLEXITY_OPTIONS = ['Baja', 'Media', 'Alta']
 const PRIORITY_OPTIONS = ['Normal', 'Alta', 'Media', 'Baja']
 
-const TaskCreateModal = ({ teamMembers, onClose, onCreate }: TaskCreateModalProps) => {
+const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate }: TaskCreateModalProps) => {
   const [opNumber, setOpNumber] = useState('')
   const [cliente, setCliente] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
@@ -35,6 +28,18 @@ const TaskCreateModal = ({ teamMembers, onClose, onCreate }: TaskCreateModalProp
   const [materials, setMaterials] = useState<Array<{ name: string; quantity: number }>>([])
   const [materialSearch, setMaterialSearch] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!selectedSector && sectores.length > 0) {
+      setSelectedSector(sectores[0].nombre)
+    }
+  }, [sectores, selectedSector])
+
+  useEffect(() => {
+    if (!operario && teamMembers.length > 0) {
+      setOperario(teamMembers[0].id)
+    }
+  }, [teamMembers, operario])
 
   const handleCreate = () => {
     if (!opNumber || !cliente || !selectedSector) {
@@ -72,9 +77,15 @@ const TaskCreateModal = ({ teamMembers, onClose, onCreate }: TaskCreateModalProp
     onClose()
   }
 
+  const addMaterial = (nombre: string) => {
+    if (nombre.length < 2) return
+    if (materials.some((m) => m.name.toLowerCase() === nombre.toLowerCase())) return
+    setMaterials([...materials, { name: nombre, quantity: 1 }])
+  }
+
   const handleAddMaterial = () => {
     if (materialSearch.length >= 2) {
-      setMaterials([...materials, { name: materialSearch, quantity: 1 }])
+      addMaterial(materialSearch)
       setMaterialSearch('')
     }
   }
@@ -106,11 +117,27 @@ const TaskCreateModal = ({ teamMembers, onClose, onCreate }: TaskCreateModalProp
     setAttachedFiles(attachedFiles.filter((_, i) => i !== index))
   }
 
-  const filteredSectors = AVAILABLE_SECTORS.filter(
-    (s) => s.toLowerCase().includes(sectorSearch.toLowerCase()) && s !== selectedSector
-  )
+  const filteredSectors =
+    sectorSearch.length >= 1
+      ? sectores.filter(
+          (sector) =>
+            sector.nombre.toLowerCase().includes(sectorSearch.toLowerCase()) &&
+            sector.nombre !== selectedSector
+        )
+      : sectores.filter((sector) => sector.nombre !== selectedSector).slice(0, 8)
 
-  const filteredMaterials = materialSearch.length >= 2 ? [] : []
+  const filteredMaterials =
+    materialSearch.length >= 2
+      ? materiales
+          .filter((material) => {
+            const query = materialSearch.toLowerCase()
+            return (
+              material.descripcion?.toLowerCase().includes(query) ||
+              material.codigo?.toLowerCase().includes(query)
+            )
+          })
+          .slice(0, 12)
+      : []
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -176,19 +203,19 @@ const TaskCreateModal = ({ teamMembers, onClose, onCreate }: TaskCreateModalProp
               onChange={(e) => setSectorSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && filteredSectors.length > 0) {
-                  handleAddSector(filteredSectors[0])
+                  handleAddSector(filteredSectors[0].nombre)
                 }
               }}
             />
-            {sectorSearch.length >= 2 && filteredSectors.length > 0 && (
+            {filteredSectors.length > 0 && (
               <div className="dropdown-list">
                 {filteredSectors.map((sector) => (
                   <div
-                    key={sector}
+                    key={sector.id}
                     className="dropdown-item"
-                    onClick={() => handleAddSector(sector)}
+                    onClick={() => handleAddSector(sector.nombre)}
                   >
-                    {sector}
+                    {sector.nombre}
                   </div>
                 ))}
               </div>
@@ -268,14 +295,19 @@ const TaskCreateModal = ({ teamMembers, onClose, onCreate }: TaskCreateModalProp
               <div className="dropdown-list">
                 {filteredMaterials.map((material) => (
                   <div
-                    key={material}
+                    key={material.id}
                     className="dropdown-item"
                     onClick={() => {
-                      setMaterials([...materials, { name: material, quantity: 1 }])
+                      addMaterial(material.descripcion)
                       setMaterialSearch('')
                     }}
                   >
-                    {material}
+                    <div>
+                      <strong>{material.descripcion}</strong>
+                      {material.codigo && (
+                        <div className="dropdown-subtext">{material.codigo}</div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

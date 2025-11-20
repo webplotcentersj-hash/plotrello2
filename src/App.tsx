@@ -5,16 +5,34 @@ import StatisticsPage from './pages/StatisticsPage'
 import ChatPage from './pages/ChatPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
-import { initialActivity, initialTasks, teamMembers } from './data/mockData'
-import type { ActivityEvent, Task } from './types/board'
+import type { ActivityEvent, Task, TeamMember } from './types/board'
+import type { MaterialRecord, SectorRecord, UsuarioRecord } from './types/api'
 import { useAuth } from './hooks/useAuth'
 import './app.css'
 import apiService from './services/api'
 import { historialToActivity, ordenToTask } from './utils/dataMappers'
+import { supabase } from './services/supabaseClient'
+
+const mapUsuariosToTeamMembers = (usuarios: UsuarioRecord[]): TeamMember[] =>
+  usuarios.map((usuario) => ({
+    id: usuario.id.toString(),
+    name: usuario.nombre,
+    role: usuario.rol,
+    avatar: usuario.nombre
+      .split(' ')
+      .map((part) => part.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase(),
+    productivity: 0
+  }))
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks)
-  const [activity, setActivity] = useState<ActivityEvent[]>(initialActivity)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [activity, setActivity] = useState<ActivityEvent[]>([])
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [sectores, setSectores] = useState<SectorRecord[]>([])
+  const [materiales, setMateriales] = useState<MaterialRecord[]>([])
   const { usuario, loading, setUsuario } = useAuth()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [dataLoading, setDataLoading] = useState(false)
@@ -50,14 +68,28 @@ function App() {
     localStorage.removeItem('usuario_id')
     setUsuario(null)
     setIsAuthenticated(false)
-    setTasks(initialTasks)
-    setActivity(initialActivity)
+    setTasks([])
+    setActivity([])
+    setTeamMembers([])
+    setSectores([])
+    setMateriales([])
   }
 
   const loadRemoteData = useCallback(async () => {
     setDataLoading(true)
     setDataError(null)
     try {
+      if (!supabase) {
+        setDataLoading(false)
+        setDataError('Supabase no está configurado. Define las variables VITE_SUPABASE_* y vuelve a intentar.')
+        setTasks([])
+        setActivity([])
+        setTeamMembers([])
+        setSectores([])
+        setMateriales([])
+        return
+      }
+
       const [ordenesResp, historialResp] = await Promise.all([
         apiService.getOrdenes(),
         apiService.getHistorialMovimientos({ limit: 100 })
@@ -75,6 +107,33 @@ function App() {
         setActivity(historialResp.data.map((registro) => historialToActivity(registro)))
       } else {
         setDataError((prev) => prev ?? historialResp.error ?? 'No se pudo cargar el historial')
+      }
+
+      const [usuariosResp, sectoresResp, materialesResp] = await Promise.all([
+        apiService.getUsuarios(),
+        apiService.getSectores(),
+        apiService.getMateriales()
+      ])
+
+      if (usuariosResp.success && usuariosResp.data) {
+        setTeamMembers(mapUsuariosToTeamMembers(usuariosResp.data))
+      } else {
+        setTeamMembers([])
+        setDataError((prev) => prev ?? usuariosResp.error ?? 'No se pudieron cargar los usuarios')
+      }
+
+      if (sectoresResp.success && sectoresResp.data) {
+        setSectores(sectoresResp.data)
+      } else {
+        setSectores([])
+        setDataError((prev) => prev ?? sectoresResp.error ?? 'No se pudieron cargar los sectores')
+      }
+
+      if (materialesResp.success && materialesResp.data) {
+        setMateriales(materialesResp.data)
+      } else {
+        setMateriales([])
+        setDataError((prev) => prev ?? materialesResp.error ?? 'No se pudieron cargar los materiales')
       }
     } catch (error) {
       console.error('Error cargando datos desde Supabase:', error)
@@ -137,6 +196,9 @@ function App() {
           onReloadData={loadRemoteData}
           isSyncing={dataLoading}
           syncError={dataError}
+          teamMembers={teamMembers}
+          sectores={sectores}
+          materiales={materiales}
         />
       </BrowserRouter>
     </>
@@ -151,7 +213,10 @@ function AppRoutes({
   onLogout,
   onReloadData,
   isSyncing,
-  syncError
+  syncError,
+  teamMembers,
+  sectores,
+  materiales
 }: {
   tasks: Task[]
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
@@ -161,6 +226,9 @@ function AppRoutes({
   onReloadData: () => Promise<void>
   isSyncing: boolean
   syncError: string | null
+  teamMembers: TeamMember[]
+  sectores: SectorRecord[]
+  materiales: MaterialRecord[]
 }) {
   const navigate = useNavigate()
 
@@ -181,6 +249,8 @@ function AppRoutes({
             onReloadData={onReloadData}
             isSyncing={isSyncing}
             syncError={syncError}
+            sectores={sectores}
+            materialesCatalog={materiales}
           />
         }
       />
@@ -197,7 +267,7 @@ function AppRoutes({
       />
       <Route
         path="/chat"
-        element={<ChatPage onBack={() => navigate('/')} />}
+        element={<ChatPage onBack={() => navigate('/')} teamMembers={teamMembers} />}
       />
     </Routes>
   )
