@@ -1,4 +1,6 @@
 import { initialActivity, initialTasks, teamMembers } from '../data/mockData'
+import { mapImpactToComplejidad, mapPriorityToDb, mapStatusToEstado } from '../utils/dataMappers'
+import type { HistorialMovimiento, OrdenTrabajo, UsuarioRecord } from '../types/api'
 import { supabase } from './supabaseClient'
 
 const LEGACY_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -11,40 +13,7 @@ type ApiResponse<T> = {
   message?: string
 }
 
-type OrdenTrabajo = {
-  id: number
-  numero_op: string
-  cliente: string
-  descripcion?: string
-  estado: string
-  prioridad: string
-  fecha_creacion?: string
-  fecha_entrega?: string
-  fecha_ingreso?: string
-  operario_asignado?: string
-  complejidad?: string
-  sector?: string
-  materiales?: string
-  nombre_creador?: string
-}
-
-type UsuarioRecord = {
-  id: number
-  nombre: string
-  rol: 'administracion' | 'taller' | 'mostrador'
-}
-
-type HistorialMovimiento = {
-  id: number
-  id_orden: number
-  estado_anterior: string
-  estado_nuevo: string
-  id_usuario: number
-  timestamp: string
-  comentario?: string
-}
-
-type ChatMessage = {
+type ChatMessageUI = {
   id: number
   canal: string
   usuario_id: number
@@ -87,7 +56,7 @@ const fallbackUsuarios: UsuarioRecord[] = teamMembers.map((member, index) => ({
   rol: (index % 2 === 0 ? 'administracion' : 'taller')
 }))
 
-const fallbackMensajes: ChatMessage[] = initialActivity.slice(0, 4).map((event, index) => ({
+const fallbackMensajes: ChatMessageUI[] = initialActivity.slice(0, 4).map((event, index) => ({
   id: index + 1,
   canal: 'general',
   usuario_id: index + 1,
@@ -366,7 +335,7 @@ class ApiService {
   }
 
   // ========== CHAT ==========
-  async getMensajesChat(canal: string, limit: number = 50): Promise<ApiResponse<ChatMessage[]>> {
+  async getMensajesChat(canal: string, limit: number = 50): Promise<ApiResponse<ChatMessageUI[]>> {
     if (supabase) {
       const roomId = chatChannelToRoom[canal] ?? 1
 
@@ -390,7 +359,7 @@ class ApiService {
           timestamp: msg.timestamp
         })) ?? []
 
-      return { success: true, data: (mensajes.reverse() as ChatMessage[]) }
+      return { success: true, data: (mensajes.reverse() as ChatMessageUI[]) }
     }
 
     if (hasLegacyBackend) {
@@ -405,7 +374,7 @@ class ApiService {
     contenido: string
     usuario_id: number
     tipo?: string
-  }): Promise<ApiResponse<ChatMessage>> {
+  }): Promise<ApiResponse<ChatMessageUI>> {
     if (supabase) {
       const roomId = chatChannelToRoom[mensaje.canal] ?? 1
 
@@ -437,7 +406,7 @@ class ApiService {
           contenido: payload.mensaje,
           tipo: mensaje.tipo === 'alert' ? 'alert' : mensaje.tipo === 'buzz' ? 'buzz' : 'message',
           timestamp: data.timestamp
-        } as ChatMessage
+        } as ChatMessageUI
       }
     }
 
@@ -448,12 +417,12 @@ class ApiService {
       })
     }
 
-    const nuevoMensaje: ChatMessage = {
+    const nuevoMensaje: ChatMessageUI = {
       id: fallbackMensajes.length + 1,
       canal: mensaje.canal,
       usuario_id: mensaje.usuario_id,
       contenido: mensaje.contenido,
-      tipo: (mensaje.tipo as ChatMessage['tipo']) || 'message',
+      tipo: (mensaje.tipo as ChatMessageUI['tipo']) || 'message',
       timestamp: new Date().toISOString()
     }
 
@@ -465,7 +434,7 @@ class ApiService {
     _usuarioDestinoId: number,
     usuarioOrigenId: number,
     canal: string
-  ): Promise<ApiResponse<ChatMessage>> {
+  ): Promise<ApiResponse<ChatMessageUI>> {
     return this.enviarMensajeChat({
       canal,
       contenido: 'Te ha enviado un zumbido!',
@@ -478,7 +447,7 @@ class ApiService {
     _usuarioDestinoId: number,
     usuarioOrigenId: number,
     canal: string
-  ): Promise<ApiResponse<ChatMessage>> {
+  ): Promise<ApiResponse<ChatMessageUI>> {
     return this.enviarMensajeChat({
       canal,
       contenido: '¡Atención! Revisar esto de inmediato.',
@@ -627,43 +596,7 @@ class ApiService {
   }
 }
 
-function mapStatusToEstado(status: string): string {
-  const mapping: Record<string, string> = {
-    'diseno-grafico': 'Diseño Gráfico',
-    'diseno-proceso': 'Diseño en Proceso',
-    'en-espera': 'En Espera',
-    imprenta: 'Imprenta (Área de Impresión)',
-    'taller-imprenta': 'Taller de Imprenta',
-    'taller-grafico': 'Taller Gráfico',
-    instalaciones: 'Instalaciones',
-    metalurgica: 'Metalúrgica',
-    'finalizado-taller': 'Finalizado en Taller',
-    'almacen-entrega': 'Almacén de Entrega'
-  }
-  return mapping[status] || status
-}
-
-function mapPriorityToDb(priority: string | undefined): string {
-  const mapping: Record<string, string> = {
-    alta: 'Alta',
-    media: 'Normal',
-    baja: 'Baja'
-  }
-  if (!priority) return 'Normal'
-  return mapping[priority] || priority
-}
-
-function mapImpactToComplejidad(impact: string | undefined): string {
-  const mapping: Record<string, string> = {
-    alta: 'Alta',
-    media: 'Media',
-    low: 'Baja'
-  }
-  if (!impact) return 'Media'
-  return mapping[impact] || impact
-}
-
-function inferChatType(message: string): ChatMessage['tipo'] {
+function inferChatType(message: string): ChatMessageUI['tipo'] {
   if (!message) return 'message'
   if (message.toLowerCase().includes('zumbido')) return 'buzz'
   if (message.toLowerCase().includes('alerta') || message.includes('¡Atención!')) return 'alert'
