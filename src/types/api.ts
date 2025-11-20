@@ -14,6 +14,7 @@ export interface OrdenTrabajo {
   materiales?: string | null
   nombre_creador?: string | null
   foto_url?: string | null
+  usuario_trabajando_nombre?: string | null
 }
 
 export interface UsuarioRecord {

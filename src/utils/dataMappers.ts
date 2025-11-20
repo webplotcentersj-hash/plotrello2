@@ -77,6 +77,7 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => ({
   priority: mapPriorityFromDb(orden.prioridad),
   ownerId: orden.operario_asignado ?? 'sin-asignar',
   createdBy: orden.nombre_creador ?? 'Sistema',
+  workingUser: orden.usuario_trabajando_nombre ?? undefined,
   tags: [],
   materials: orden.materiales
     ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)

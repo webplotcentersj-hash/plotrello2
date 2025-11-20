@@ -28,6 +28,7 @@ export interface Task {
   priority: Priority
   ownerId: string
   createdBy: string
+  workingUser?: string
   tags: string[]
   materials: string[]
   assignedSector: string

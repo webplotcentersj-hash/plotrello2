@@ -95,7 +95,7 @@ class ApiService {
       // Seleccionar columnas explícitamente para evitar errores si falta foto_url
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .select('id, numero_op, cliente, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url')
+        .select('id, numero_op, cliente, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre')
         .order('fecha_creacion', { ascending: false })
 
       if (error) {

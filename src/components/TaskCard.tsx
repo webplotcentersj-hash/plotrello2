@@ -151,9 +151,13 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
               </div>
               <div className="footer-right">
                 <div className="created-by-badge">
-                  <span className="created-by-label">Creado por</span>
-                  <strong className="created-by-name">{task.createdBy}</strong>
+                  <span className="created-by-text">Creado por: <strong>{task.createdBy}</strong></span>
                 </div>
+                {task.workingUser && (
+                  <div className="working-user-badge">
+                    <span className="working-user-text">Trabajando: <strong>{task.workingUser}</strong></span>
+                  </div>
+                )}
                 <div className="due-date">
                   <span>Último movimiento</span>
                   <strong>{formatCompactDateTime(task.updatedAt)}</strong>

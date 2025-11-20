@@ -370,9 +370,6 @@
   border-radius: 10px;
   padding: 8px 12px;
   text-align: right;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   box-shadow: 0 2px 8px rgba(235, 103, 27, 0.1);
   transition: all 0.2s ease;
   width: 100%;
@@ -387,25 +384,56 @@
   transform: translateY(-1px);
 }
 
-.created-by-label {
+.created-by-text {
   display: block;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(235, 103, 27, 0.9);
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.created-by-name {
-  display: block;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 0.8rem;
+  color: rgba(235, 103, 27, 0.95);
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+}
+
+.created-by-text strong {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.working-user-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  padding: 8px 12px;
+  text-align: right;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.working-user-badge:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.12));
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+  transform: translateY(-1px);
+}
+
+.working-user-text {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(16, 185, 129, 0.95);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.working-user-text strong {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-left: 4px;
 }
 
 .due-date {
