@@ -94,7 +94,6 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
               <span className="task-date">{formatShortDate(task.dueDate)}</span>
             </div>
             <h4>{task.title}</h4>
-            <p className="task-created-by">Creado por: {task.createdBy}</p>
           </div>
 
           <div className="task-body">
@@ -150,9 +149,15 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
                   <small>{owner?.role ?? 'Trabajador no asignado'}</small>
                 </div>
               </div>
-              <div className="due-date">
-                <span>Último movimiento</span>
-                <strong>{formatCompactDateTime(task.updatedAt)}</strong>
+              <div className="footer-right">
+                <div className="created-by-badge">
+                  <span className="created-by-label">Creado por</span>
+                  <strong className="created-by-name">{task.createdBy}</strong>
+                </div>
+                <div className="due-date">
+                  <span>Último movimiento</span>
+                  <strong>{formatCompactDateTime(task.updatedAt)}</strong>
+                </div>
               </div>
             </footer>
           </div>
