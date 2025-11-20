@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import type { Task, TeamMember } from '../types/board'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import type { ActivityEvent, Task, TeamMember } from '../types/board'
 import type { MaterialRecord, SectorRecord } from '../types/api'
 import { uploadAttachmentAndGetUrl } from '../utils/storage'
 import './TaskEditModal.css'
@@ -9,6 +9,7 @@ type TaskEditModalProps = {
   teamMembers: TeamMember[]
   sectores: SectorRecord[]
   materiales: MaterialRecord[]
+  activity: ActivityEvent[]
   onClose: () => void
   onSave: (updatedTask: Task) => void
   onDelete?: (taskId: string) => void
@@ -30,6 +31,7 @@ const TaskEditModal = ({
   teamMembers,
   sectores,
   materiales,
+  activity,
   onClose,
   onSave,
   onDelete
@@ -47,6 +49,13 @@ const TaskEditModal = ({
   const [isMaterialDropdownOpen, setIsMaterialDropdownOpen] = useState(false)
   const attachmentsRef = useRef<LocalAttachment[]>([])
   const hasPendingUploads = attachments.some((attachment) => attachment.uploading)
+
+  const taskHistory = useMemo(() => {
+    if (!task) return []
+    return activity
+      .filter((event) => event.taskId === task.id)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  }, [activity, task])
 
   useEffect(() => {
     if (task) {
@@ -132,6 +141,9 @@ const TaskEditModal = ({
   const handleRemoveMaterial = (index: number) => {
     setMaterials(materials.filter((_, i) => i !== index))
   }
+
+  const resolveMemberName = (id: string) =>
+    teamMembers.find((member) => member.id === id)?.name ?? `Usuario #${id}`
 
   const handleAddSector = (sector: string) => {
     if (!selectedSectors.includes(sector)) {
@@ -391,6 +403,38 @@ const TaskEditModal = ({
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
               placeholder="Sin descripción."
             />
+          </div>
+
+          <div className="form-group">
+            <label>Historial de movimientos</label>
+            {taskHistory.length > 0 ? (
+              <div className="history-list">
+                {taskHistory.map((entry) => (
+                  <div key={entry.id} className="history-item">
+                    <div>
+                      <strong>{resolveMemberName(entry.actorId)}</strong>
+                      <span className="history-date">
+                        {new Date(entry.timestamp).toLocaleString('es-AR')}
+                      </span>
+                    </div>
+                    <p>
+                      {entry.from !== entry.to ? (
+                        <>
+                          {entry.from} → <span className="history-state">{entry.to}</span>
+                        </>
+                      ) : (
+                        entry.note
+                      )}
+                    </p>
+                    {entry.note && entry.from === entry.to && (
+                      <p className="history-note">{entry.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="history-empty">Esta orden todavía no tiene movimientos registrados.</p>
+            )}
           </div>
 
           <div className="form-group">

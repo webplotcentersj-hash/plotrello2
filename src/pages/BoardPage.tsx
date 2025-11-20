@@ -374,6 +374,7 @@ const BoardPage = ({
           teamMembers={teamMembers}
           sectores={sectores}
           materiales={materialesCatalog}
+          activity={activity}
           onClose={() => setTaskToEdit(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}

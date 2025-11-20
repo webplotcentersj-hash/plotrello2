@@ -309,6 +309,55 @@
   margin: 6px 0 0;
 }
 
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 12px;
+  background: rgba(15, 18, 33, 0.7);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+}
+
+.history-item {
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.history-item strong {
+  color: var(--text-primary);
+}
+
+.history-date {
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.history-state {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.history-note {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.history-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 8px 0 0;
+}
+
 .delete-file {
   background: none;
   border: none;
