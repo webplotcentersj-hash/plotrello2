@@ -92,12 +92,31 @@ class ApiService {
   // ========== ORDENES DE TRABAJO ==========
   async getOrdenes(): Promise<ApiResponse<OrdenTrabajo[]>> {
     if (supabase) {
+      // Seleccionar columnas explícitamente para evitar errores si falta foto_url
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .select('*')
+        .select('id, numero_op, cliente, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url')
         .order('fecha_creacion', { ascending: false })
 
       if (error) {
+        // Si el error es por foto_url, intentar sin esa columna
+        if (error.message.includes('foto_url')) {
+          console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('ordenes_trabajo')
+            .select('id, numero_op, cliente, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador')
+            .order('fecha_creacion', { ascending: false })
+          
+          if (fallbackError) {
+            console.error('Supabase getOrdenes error:', fallbackError)
+            return { success: false, error: fallbackError.message }
+          }
+          
+          // Agregar foto_url como null para cada orden
+          const dataWithFoto = (fallbackData || []).map((orden: any) => ({ ...orden, foto_url: null }))
+          return { success: true, data: (dataWithFoto as OrdenTrabajo[]) ?? [] }
+        }
+        
         console.error('Supabase getOrdenes error:', error)
         return { success: false, error: error.message }
       }
@@ -137,13 +156,36 @@ class ApiService {
 
   async createOrden(orden: Partial<OrdenTrabajo>): Promise<ApiResponse<OrdenTrabajo>> {
     if (supabase) {
+      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
+      const ordenToInsert = { ...orden }
+      if (!ordenToInsert.foto_url) {
+        delete ordenToInsert.foto_url
+      }
+      
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .insert(orden)
+        .insert(ordenToInsert)
         .select()
         .single()
 
-      if (error) return { success: false, error: error.message }
+      if (error) {
+        // Si el error es por foto_url, intentar sin esa columna
+        if (error.message.includes('foto_url')) {
+          console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
+          const ordenWithoutFoto = { ...ordenToInsert }
+          delete ordenWithoutFoto.foto_url
+          
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('ordenes_trabajo')
+            .insert(ordenWithoutFoto)
+            .select()
+            .single()
+          
+          if (fallbackError) return { success: false, error: fallbackError.message }
+          return { success: true, data: { ...fallbackData, foto_url: null } as OrdenTrabajo }
+        }
+        return { success: false, error: error.message }
+      }
       return { success: true, data: data as OrdenTrabajo }
     }
 
@@ -158,14 +200,38 @@ class ApiService {
 
   async updateOrden(id: number, orden: Partial<OrdenTrabajo>): Promise<ApiResponse<OrdenTrabajo>> {
     if (supabase) {
+      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
+      const ordenToUpdate = { ...orden }
+      if (!ordenToUpdate.foto_url) {
+        delete ordenToUpdate.foto_url
+      }
+      
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .update(orden)
+        .update(ordenToUpdate)
         .eq('id', id)
         .select()
         .single()
 
-      if (error) return { success: false, error: error.message }
+      if (error) {
+        // Si el error es por foto_url, intentar sin esa columna
+        if (error.message.includes('foto_url')) {
+          console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
+          const ordenWithoutFoto = { ...ordenToUpdate }
+          delete ordenWithoutFoto.foto_url
+          
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('ordenes_trabajo')
+            .update(ordenWithoutFoto)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (fallbackError) return { success: false, error: fallbackError.message }
+          return { success: true, data: { ...fallbackData, foto_url: null } as OrdenTrabajo }
+        }
+        return { success: false, error: error.message }
+      }
       return { success: true, data: data as OrdenTrabajo }
     }
 
