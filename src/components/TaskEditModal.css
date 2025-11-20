@@ -275,6 +275,20 @@
   border-radius: 8px;
 }
 
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-preview img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+}
+
 .file-item span {
   color: var(--text-primary);
   font-size: 0.9rem;

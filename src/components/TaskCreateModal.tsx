@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Task, TeamMember, TaskStatus } from '../types/board'
 import type { MaterialRecord, SectorRecord } from '../types/api'
 import './TaskEditModal.css'
@@ -11,10 +11,23 @@ type TaskCreateModalProps = {
   onCreate: (newTask: Omit<Task, 'id'>) => void
 }
 
+type LocalAttachment = {
+  id: string
+  name: string
+  previewUrl: string
+  file?: File
+}
+
 const COMPLEXITY_OPTIONS = ['Baja', 'Media', 'Alta']
 const PRIORITY_OPTIONS = ['Normal', 'Alta', 'Media', 'Baja']
 
-const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate }: TaskCreateModalProps) => {
+const TaskCreateModal = ({
+  teamMembers,
+  sectores,
+  materiales,
+  onClose,
+  onCreate
+}: TaskCreateModalProps) => {
   const [opNumber, setOpNumber] = useState('')
   const [cliente, setCliente] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
@@ -27,7 +40,10 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
   const [descripcion, setDescripcion] = useState('')
   const [materials, setMaterials] = useState<Array<{ name: string; quantity: number }>>([])
   const [materialSearch, setMaterialSearch] = useState('')
-  const [attachedFiles, setAttachedFiles] = useState<string[]>([])
+  const [attachments, setAttachments] = useState<LocalAttachment[]>([])
+  const [isSectorDropdownOpen, setIsSectorDropdownOpen] = useState(false)
+  const [isMaterialDropdownOpen, setIsMaterialDropdownOpen] = useState(false)
+  const attachmentsRef = useRef<LocalAttachment[]>([])
 
   useEffect(() => {
     if (!selectedSector && sectores.length > 0) {
@@ -64,7 +80,7 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
       tags: [],
       materials: materials.map((m) => m.name),
       assignedSector: selectedSector,
-      photoUrl: attachedFiles[0] || '',
+      photoUrl: attachments[0]?.previewUrl || '',
       storyPoints: 0,
       progress: 0,
       createdAt: new Date().toISOString(),
@@ -84,10 +100,18 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
   }
 
   const handleAddMaterial = () => {
-    if (materialSearch.length >= 2) {
-      addMaterial(materialSearch)
-      setMaterialSearch('')
-    }
+    if (materialSearch.trim().length === 0) return
+    addMaterial(materialSearch.trim())
+    setMaterialSearch('')
+    setIsMaterialDropdownOpen(false)
+  }
+
+  const handleSelectMaterial = (material: MaterialRecord) => {
+    const label = material.descripcion || material.codigo
+    if (!label) return
+    addMaterial(label)
+    setMaterialSearch('')
+    setIsMaterialDropdownOpen(false)
   }
 
   const handleRemoveMaterial = (index: number) => {
@@ -97,47 +121,65 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
   const handleAddSector = (sector: string) => {
     setSelectedSector(sector)
     setSectorSearch('')
+    setIsSectorDropdownOpen(false)
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
-    if (files) {
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          const url = reader.result as string
-          setAttachedFiles([...attachedFiles, url])
+    if (!files?.length) return
+
+    const newEntries: LocalAttachment[] = Array.from(files).map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      previewUrl: URL.createObjectURL(file),
+      file
+    }))
+
+    setAttachments((prev) => [...prev, ...newEntries])
+    event.target.value = ''
+  }
+
+  const handleRemoveFile = (attachmentId: string) => {
+    setAttachments((prev) => {
+      const toRemove = prev.find((item) => item.id === attachmentId)
+      if (toRemove?.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(toRemove.previewUrl)
+      }
+      return prev.filter((item) => item.id !== attachmentId)
+    })
+  }
+
+  useEffect(() => {
+    attachmentsRef.current = attachments
+  }, [attachments])
+
+  useEffect(() => {
+    return () => {
+      attachmentsRef.current.forEach((item) => {
+        if (item.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(item.previewUrl)
         }
-        reader.readAsDataURL(file)
       })
     }
-  }
+  }, [])
 
-  const handleRemoveFile = (index: number) => {
-    setAttachedFiles(attachedFiles.filter((_, i) => i !== index))
-  }
+  const normalizedSectorQuery = sectorSearch.trim().toLowerCase()
+  const filteredSectors = sectores
+    .filter((sector) => sector.nombre !== selectedSector)
+    .filter((sector) =>
+      normalizedSectorQuery ? sector.nombre.toLowerCase().includes(normalizedSectorQuery) : true
+    )
+    .slice(0, normalizedSectorQuery ? 12 : 7)
 
-  const filteredSectors =
-    sectorSearch.length >= 1
-      ? sectores.filter(
-          (sector) =>
-            sector.nombre.toLowerCase().includes(sectorSearch.toLowerCase()) &&
-            sector.nombre !== selectedSector
-        )
-      : sectores.filter((sector) => sector.nombre !== selectedSector).slice(0, 8)
-
-  const filteredMaterials =
-    materialSearch.length >= 2
-      ? materiales
-          .filter((material) => {
-            const query = materialSearch.toLowerCase()
-            return (
-              material.descripcion?.toLowerCase().includes(query) ||
-              material.codigo?.toLowerCase().includes(query)
-            )
-          })
-          .slice(0, 12)
-      : []
+  const normalizedMaterialQuery = materialSearch.trim().toLowerCase()
+  const filteredMaterials = materiales
+    .filter((material) => {
+      if (!normalizedMaterialQuery) return true
+      const descripcion = material.descripcion?.toLowerCase() ?? ''
+      const codigo = material.codigo?.toLowerCase() ?? ''
+      return descripcion.includes(normalizedMaterialQuery) || codigo.includes(normalizedMaterialQuery)
+    })
+    .slice(0, normalizedMaterialQuery ? 15 : 10)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -198,16 +240,18 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
             <label>Sectores</label>
             <input
               type="text"
-              placeholder="Buscar sectores (mínimo 2 caracteres)..."
+              placeholder="Buscar o seleccionar sector..."
               value={sectorSearch}
               onChange={(e) => setSectorSearch(e.target.value)}
+              onFocus={() => setIsSectorDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setIsSectorDropdownOpen(false), 120)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && filteredSectors.length > 0) {
                   handleAddSector(filteredSectors[0].nombre)
                 }
               }}
             />
-            {filteredSectors.length > 0 && (
+            {isSectorDropdownOpen && filteredSectors.length > 0 && (
               <div className="dropdown-list">
                 {filteredSectors.map((sector) => (
                   <div
@@ -282,25 +326,28 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
             <label>Materiales</label>
             <input
               type="text"
-              placeholder="Buscar material (mínimo 2 caracteres)..."
+              placeholder="Buscar o seleccionar material..."
               value={materialSearch}
               onChange={(e) => setMaterialSearch(e.target.value)}
+              onFocus={() => setIsMaterialDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setIsMaterialDropdownOpen(false), 120)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && materialSearch.length >= 2) {
-                  handleAddMaterial()
+                if (e.key === 'Enter') {
+                  if (filteredMaterials.length > 0) {
+                    handleSelectMaterial(filteredMaterials[0])
+                  } else {
+                    handleAddMaterial()
+                  }
                 }
               }}
             />
-            {materialSearch.length >= 2 && filteredMaterials.length > 0 && (
+            {isMaterialDropdownOpen && filteredMaterials.length > 0 && (
               <div className="dropdown-list">
                 {filteredMaterials.map((material) => (
                   <div
                     key={material.id}
                     className="dropdown-item"
-                    onClick={() => {
-                      addMaterial(material.descripcion)
-                      setMaterialSearch('')
-                    }}
+                    onClick={() => handleSelectMaterial(material)}
                   >
                     <div>
                       <strong>{material.descripcion}</strong>
@@ -341,12 +388,22 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
 
           <div className="form-group">
             <label>Archivos (imágenes o PDF)</label>
-            {attachedFiles.length > 0 && (
+            {attachments.length > 0 && (
               <div className="attached-files">
-                {attachedFiles.map((file, index) => (
-                  <div key={index} className="file-item">
-                    <span>{file.split('/').pop() || `Archivo ${index + 1}`}</span>
-                    <button type="button" className="delete-file" onClick={() => handleRemoveFile(index)}>
+                {attachments.map((file) => (
+                  <div key={file.id} className="file-item">
+                    <div className="file-preview">
+                      {file.previewUrl.match(/^https?:|^blob:/) ? (
+                        <img src={file.previewUrl} alt={file.name} />
+                      ) : (
+                        <span>{file.name}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="delete-file"
+                      onClick={() => handleRemoveFile(file.id)}
+                    >
                       Eliminar
                     </button>
                   </div>
@@ -365,7 +422,9 @@ const TaskCreateModal = ({ teamMembers, sectores, materiales, onClose, onCreate 
                 />
               </label>
               <span className="upload-hint">
-                {attachedFiles.length === 0 ? 'Ningún archivo seleccionado' : `${attachedFiles.length} archivo(s) seleccionado(s)`}
+                {attachments.length === 0
+                  ? 'Ningún archivo seleccionado'
+                  : `${attachments.length} archivo(s) seleccionado(s)`}
               </span>
             </div>
           </div>

@@ -6,7 +6,13 @@ import ChatPage from './pages/ChatPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
 import type { ActivityEvent, Task, TeamMember } from './types/board'
-import type { MaterialRecord, SectorRecord, UsuarioRecord } from './types/api'
+import type {
+  HistorialMovimiento,
+  MaterialRecord,
+  OrdenTrabajo,
+  SectorRecord,
+  UsuarioRecord
+} from './types/api'
 import { useAuth } from './hooks/useAuth'
 import './app.css'
 import apiService from './services/api'
@@ -158,6 +164,80 @@ function App() {
       void loadRemoteData()
     }
   }, [isAuthenticated, loadRemoteData])
+
+  useEffect(() => {
+    if (!supabase || !isAuthenticated) return
+
+    const upsertTaskFromOrden = (orden: OrdenTrabajo) => {
+      if (!orden?.id) return
+      setTasks((prev) => {
+        const next = [...prev]
+        const mapped = ordenToTask(orden)
+        const idx = next.findIndex((task) => task.id === orden.id!.toString())
+        if (idx >= 0) {
+          next[idx] = mapped
+        } else {
+          next.unshift(mapped)
+        }
+        return next
+      })
+    }
+
+    const removeTask = (orden: OrdenTrabajo | null) => {
+      if (!orden?.id) return
+      setTasks((prev) => prev.filter((task) => task.id !== orden.id!.toString()))
+    }
+
+    const addActivityFromRegistro = (registro: HistorialMovimiento) => {
+      if (!registro?.id) return
+      const mapped = historialToActivity(registro)
+      setActivity((prev) => {
+        const withoutDuplicate = prev.filter((event) => event.id !== mapped.id)
+        return [mapped, ...withoutDuplicate].slice(0, 300)
+      })
+    }
+
+    const ordenesChannel = supabase
+      .channel('realtime-ordenes')
+      .on<OrdenTrabajo>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ordenes_trabajo' },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            removeTask(payload.old as OrdenTrabajo)
+          } else {
+            upsertTaskFromOrden(payload.new as OrdenTrabajo)
+          }
+        }
+      )
+
+    const historialChannel = supabase
+      .channel('realtime-historial')
+      .on<HistorialMovimiento>(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'historial_movimientos' },
+        (payload) => {
+          addActivityFromRegistro(payload.new as HistorialMovimiento)
+        }
+      )
+
+    ordenesChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Realtime conectado: ordenes_trabajo')
+      }
+    })
+
+    historialChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Realtime conectado: historial_movimientos')
+      }
+    })
+
+    return () => {
+      void ordenesChannel.unsubscribe()
+      void historialChannel.unsubscribe()
+    }
+  }, [isAuthenticated])
 
   if (loading) {
     return (

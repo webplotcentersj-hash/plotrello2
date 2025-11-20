@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Task, TeamMember } from '../types/board'
 import type { MaterialRecord, SectorRecord } from '../types/api'
 import './TaskEditModal.css'
@@ -11,6 +11,13 @@ type TaskEditModalProps = {
   onClose: () => void
   onSave: (updatedTask: Task) => void
   onDelete?: (taskId: string) => void
+}
+
+type LocalAttachment = {
+  id: string
+  name: string
+  previewUrl: string
+  file?: File
 }
 
 const COMPLEXITY_OPTIONS = ['Baja', 'Media', 'Alta']
@@ -30,9 +37,12 @@ const TaskEditModal = ({
   const [materials, setMaterials] = useState<Array<{ name: string; quantity: number }>>([])
   const [materialSearch, setMaterialSearch] = useState('')
   const [sectorSearch, setSectorSearch] = useState('')
-  const [attachedFiles, setAttachedFiles] = useState<string[]>([])
+  const [attachments, setAttachments] = useState<LocalAttachment[]>([])
   const [complexity, setComplexity] = useState<string>('Baja')
   const [estimatedTime, setEstimatedTime] = useState<string>('00:00')
+  const [isSectorDropdownOpen, setIsSectorDropdownOpen] = useState(false)
+  const [isMaterialDropdownOpen, setIsMaterialDropdownOpen] = useState(false)
+  const attachmentsRef = useRef<LocalAttachment[]>([])
 
   useEffect(() => {
     if (task) {
@@ -53,7 +63,17 @@ const TaskEditModal = ({
           quantity: 1
         }))
       )
-      setAttachedFiles(task.photoUrl ? [task.photoUrl] : [])
+      setAttachments(
+        task.photoUrl
+          ? [
+              {
+                id: 'existing-photo',
+                name: task.photoUrl.split('/').pop() || 'Adjunto',
+                previewUrl: task.photoUrl
+              }
+            ]
+          : []
+      )
       if (task.dueDate) {
         const date = new Date(task.dueDate)
         const hours = date.getHours().toString().padStart(2, '0')
@@ -84,10 +104,18 @@ const TaskEditModal = ({
   }
 
   const handleAddMaterial = () => {
-    if (materialSearch.length >= 2) {
-      addMaterial(materialSearch)
-      setMaterialSearch('')
-    }
+    if (materialSearch.trim().length === 0) return
+    addMaterial(materialSearch.trim())
+    setMaterialSearch('')
+    setIsMaterialDropdownOpen(false)
+  }
+
+  const handleSelectMaterial = (material: MaterialRecord) => {
+    const label = material.descripcion || material.codigo
+    if (!label) return
+    addMaterial(label)
+    setMaterialSearch('')
+    setIsMaterialDropdownOpen(false)
   }
 
   const handleRemoveMaterial = (index: number) => {
@@ -99,6 +127,7 @@ const TaskEditModal = ({
       setSelectedSectors([...selectedSectors, sector])
     }
     setSectorSearch('')
+    setIsSectorDropdownOpen(false)
   }
 
   const handleRemoveSector = (sector: string) => {
@@ -106,49 +135,70 @@ const TaskEditModal = ({
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const url = reader.result as string
-        setAttachedFiles([...attachedFiles, url])
-        setFormData({ ...formData, photoUrl: url })
+    const files = event.target.files
+    if (!files?.length) return
+
+    const newEntries: LocalAttachment[] = Array.from(files).map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      previewUrl: URL.createObjectURL(file),
+      file
+    }))
+
+    setAttachments((prev) => [...prev, ...newEntries])
+    setFormData((prev) => ({
+      ...prev,
+      photoUrl: prev?.photoUrl || newEntries[0]?.previewUrl || ''
+    }))
+    event.target.value = ''
+  }
+
+  const handleRemoveFile = (attachmentId: string) => {
+    setAttachments((prev) => {
+      const toRemove = prev.find((item) => item.id === attachmentId)
+      if (toRemove?.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(toRemove.previewUrl)
       }
-      reader.readAsDataURL(file)
-    }
+      const updated = prev.filter((item) => item.id !== attachmentId)
+      setFormData((current) => ({
+        ...current,
+        photoUrl: updated[0]?.previewUrl || ''
+      }))
+      return updated
+    })
   }
 
-  const handleRemoveFile = (index: number) => {
-    const newFiles = attachedFiles.filter((_, i) => i !== index)
-    setAttachedFiles(newFiles)
-    if (newFiles.length > 0) {
-      setFormData({ ...formData, photoUrl: newFiles[0] })
-    } else {
-      setFormData({ ...formData, photoUrl: '' })
+  useEffect(() => {
+    attachmentsRef.current = attachments
+  }, [attachments])
+
+  useEffect(() => {
+    return () => {
+      attachmentsRef.current.forEach((item) => {
+        if (item.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(item.previewUrl)
+        }
+      })
     }
-  }
+  }, [])
 
-  const filteredSectors =
-    sectorSearch.length >= 1
-      ? sectores.filter(
-          (sector) =>
-            sector.nombre.toLowerCase().includes(sectorSearch.toLowerCase()) &&
-            !selectedSectors.includes(sector.nombre)
-        )
-      : sectores.filter((sector) => !selectedSectors.includes(sector.nombre)).slice(0, 8)
+  const normalizedSectorQuery = sectorSearch.trim().toLowerCase()
+  const filteredSectors = sectores
+    .filter((sector) => !selectedSectors.includes(sector.nombre))
+    .filter((sector) =>
+      normalizedSectorQuery ? sector.nombre.toLowerCase().includes(normalizedSectorQuery) : true
+    )
+    .slice(0, normalizedSectorQuery ? 12 : 7)
 
-  const filteredMaterials =
-    materialSearch.length >= 2
-      ? materiales
-          .filter((material) => {
-            const query = materialSearch.toLowerCase()
-            return (
-              material.descripcion?.toLowerCase().includes(query) ||
-              material.codigo?.toLowerCase().includes(query)
-            )
-          })
-          .slice(0, 12)
-      : []
+  const normalizedMaterialQuery = materialSearch.trim().toLowerCase()
+  const filteredMaterials = materiales
+    .filter((material) => {
+      if (!normalizedMaterialQuery) return true
+      const descripcion = material.descripcion?.toLowerCase() ?? ''
+      const codigo = material.codigo?.toLowerCase() ?? ''
+      return descripcion.includes(normalizedMaterialQuery) || codigo.includes(normalizedMaterialQuery)
+    })
+    .slice(0, normalizedMaterialQuery ? 15 : 10)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -270,16 +320,18 @@ const TaskEditModal = ({
             <label>Sectores</label>
             <input
               type="text"
-              placeholder="Buscar sectores (mínimo 2 caracteres)..."
+              placeholder="Buscar o seleccionar sector..."
               value={sectorSearch}
               onChange={(e) => setSectorSearch(e.target.value)}
+              onFocus={() => setIsSectorDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setIsSectorDropdownOpen(false), 120)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && filteredSectors.length > 0) {
                   handleAddSector(filteredSectors[0].nombre)
                 }
               }}
             />
-            {filteredSectors.length > 0 && (
+            {isSectorDropdownOpen && filteredSectors.length > 0 && (
               <div className="dropdown-list">
                 {filteredSectors.map((sector) => (
                   <div
@@ -318,25 +370,28 @@ const TaskEditModal = ({
             <label>Materiales</label>
             <input
               type="text"
-              placeholder="Buscar material (mínimo 2 caracteres)..."
+              placeholder="Buscar o seleccionar material..."
               value={materialSearch}
               onChange={(e) => setMaterialSearch(e.target.value)}
+              onFocus={() => setIsMaterialDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setIsMaterialDropdownOpen(false), 120)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && materialSearch.length >= 2) {
-                  handleAddMaterial()
+                if (e.key === 'Enter') {
+                  if (filteredMaterials.length > 0) {
+                    handleSelectMaterial(filteredMaterials[0])
+                  } else {
+                    handleAddMaterial()
+                  }
                 }
               }}
             />
-            {materialSearch.length >= 2 && filteredMaterials.length > 0 && (
+            {isMaterialDropdownOpen && filteredMaterials.length > 0 && (
               <div className="dropdown-list">
                 {filteredMaterials.map((material) => (
                   <div
                     key={material.id}
                     className="dropdown-item"
-                    onClick={() => {
-                      addMaterial(material.descripcion)
-                      setMaterialSearch('')
-                    }}
+                    onClick={() => handleSelectMaterial(material)}
                   >
                     <div>
                       <strong>{material.descripcion}</strong>
@@ -377,12 +432,22 @@ const TaskEditModal = ({
 
           <div className="form-group">
             <label>Archivos Adjuntos</label>
-            {attachedFiles.length > 0 && (
+            {attachments.length > 0 && (
               <div className="attached-files">
-                {attachedFiles.map((file, index) => (
-                  <div key={index} className="file-item">
-                    <span>{file.split('/').pop() || `Archivo ${index + 1}`}</span>
-                    <button type="button" className="delete-file" onClick={() => handleRemoveFile(index)}>
+                {attachments.map((file) => (
+                  <div key={file.id} className="file-item">
+                    <div className="file-preview">
+                      {file.previewUrl.match(/^https?:|^blob:/) ? (
+                        <img src={file.previewUrl} alt={file.name} />
+                      ) : (
+                        <span>{file.name}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="delete-file"
+                      onClick={() => handleRemoveFile(file.id)}
+                    >
                       Eliminar
                     </button>
                   </div>
