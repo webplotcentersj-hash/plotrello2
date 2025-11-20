@@ -115,3 +115,4 @@
 - Los errores se loguean en la consola para debugging
 - Si ves un mensaje de error en pantalla, ese es el problema específico
 
+

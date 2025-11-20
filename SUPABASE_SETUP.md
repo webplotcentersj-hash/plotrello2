@@ -6,9 +6,10 @@ Esta guía documenta cómo reemplazar el backend PHP/MySQL por Supabase mantenie
 
 1. **Crear proyecto en Supabase** → [app.supabase.com](https://app.supabase.com/)
 2. **Ejecutar `supabase/schema.sql`** en el SQL Editor de Supabase
-3. **Ejecutar `supabase/materiales_seed.sql`** en el SQL Editor de Supabase
-4. **Crear archivo `.env`** con tus credenciales de Supabase (copiá `env.example`)
-5. **Crear bucket `archivos`** en Storage (opcional, solo si usás archivos)
+3. **Ejecutar `supabase/patches/2024-11-20_fix_sectores_y_creador.sql`** si tu esquema fue creado antes del 20/11
+4. **Ejecutar `supabase/materiales_seed.sql`** en el SQL Editor de Supabase
+5. **Crear archivo `.env`** con tus credenciales de Supabase (copiá `env.example`)
+6. **Crear bucket `archivos`** en Storage (opcional, solo si usás archivos)
 
 ¡Listo! Ya podés correr `npm run dev` y la app debería funcionar.
 
@@ -43,8 +44,14 @@ VITE_SUPABASE_SCHEMA=u956355532_tg
    - Pégalo en el SQL Editor de Supabase
    - Haz clic en **RUN** (o presiona Ctrl+Enter)
    - ✅ Esto crea todas las tablas, funciones RPC (`login_usuario`, `logout_usuario`), vistas y secuencias
+   - ✅ Desde 20/11 el schema ya incluye la precarga de los sectores requeridos
 
-3. **Carga los datos de materiales:**
+3. **Si ya habías ejecutado el schema antes del 20/11:** corre el parche `supabase/patches/2024-11-20_fix_sectores_y_creador.sql` para:
+   - Actualizar el `CHECK` de `ordenes_trabajo.sector`
+   - Añadir el campo `nombre_creador`
+   - Precargar los sectores (`Diseño Gráfico`, `Taller de Imprenta`, etc.)
+
+4. **Carga los datos de materiales:**
    - Abre el archivo `supabase/materiales_seed.sql` en tu editor
    - Copia **TODO** el contenido
    - Pégalo en el SQL Editor de Supabase (nueva pestaña o después del paso anterior)

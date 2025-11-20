@@ -89,3 +89,4 @@ VITE_SUPABASE_SCHEMA=public
 
 Luego ejecutá `npm run dev` para probar localmente.
 
+

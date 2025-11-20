@@ -127,3 +127,4 @@ FROM public.usuarios;
 - **Usá contraseñas fuertes** (mínimo 8 caracteres, mayúsculas, números, símbolos)
 - **Considerá usar autenticación de Supabase** en el futuro para mejor seguridad
 
+
