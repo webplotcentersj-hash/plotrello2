@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { Task, TeamMember, ActivityEvent } from '../types/board'
-import { BOARD_COLUMNS } from '../data/mockData'
+import { generateContent, getSystemContext } from '../services/plotAIService'
 import './PlotAIChat.css'
 
 type PlotAIChatProps = {
@@ -34,58 +33,9 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
-  const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  const getSystemContext = () => {
-    const totalTasks = tasks.length
-    const completedTasks = tasks.filter((t) => t.status === 'almacen-entrega').length
-    const inProgressTasks = tasks.filter((t) => 
-      !['diseno-grafico', 'almacen-entrega'].includes(t.status)
-    ).length
-
-    const statusDistribution = tasks.reduce((acc, task) => {
-      const column = BOARD_COLUMNS.find((col) => col.id === task.status)
-      const label = column?.label || task.status
-      acc[label] = (acc[label] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
-
-    const workloadByMember = teamMembers.map((member) => {
-      const memberTasks = tasks.filter((task) => task.ownerId === member.id)
-      return {
-        name: member.name,
-        taskCount: memberTasks.length,
-        highPriority: memberTasks.filter((t) => t.priority === 'alta').length
-      }
-    })
-
-    const recentActivity = activity.slice(0, 10).map((event) => {
-      const member = teamMembers.find((m) => m.id === event.actorId)
-      const fromCol = BOARD_COLUMNS.find((col) => col.id === event.from)
-      const toCol = BOARD_COLUMNS.find((col) => col.id === event.to)
-      return {
-        user: member?.name || 'Desconocido',
-        movement: `${fromCol?.label || event.from} → ${toCol?.label || event.to}`,
-        time: new Date(event.timestamp).toLocaleString('es-AR')
-      }
-    })
-
-    return {
-      totalTasks,
-      completedTasks,
-      inProgressTasks,
-      statusDistribution,
-      workloadByMember,
-      recentActivity,
-      teamMembers: teamMembers.map((m) => ({ name: m.name, role: m.role })),
-      columns: BOARD_COLUMNS.map((col) => ({ id: col.id, label: col.label, description: col.description }))
-    }
-  }
 
   const analyzeFile = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -123,10 +73,6 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
 
   const handleSendMessage = async () => {
     if (!input.trim() && uploadedFiles.length === 0) return
-    if (!genAI) {
-      alert('API key de Gemini no configurada. Por favor, configura VITE_GEMINI_API_KEY en tu archivo .env')
-      return
-    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -147,55 +93,11 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
     setIsLoading(true)
 
     try {
-      const systemContext = getSystemContext()
+      const systemContext = getSystemContext(tasks, activity, teamMembers)
       const hasImages = userMessage.attachments?.some((att) => att.type.startsWith('image/'))
       
-      // Usar gemini-pro-vision si hay imágenes, sino gemini-pro
-      const modelName = hasImages ? 'gemini-pro-vision' : 'gemini-pro'
-      const model = genAI.getGenerativeModel({ model: modelName })
-
-      let prompt = `Eres PlotAI, un asistente inteligente AGÉNTICO especializado en gestión de producción gráfica e imprenta. Tienes acceso completo al sistema y puedes:
-
-CAPACIDADES AGÉNTICAS:
-- Analizar datos en tiempo real del sistema
-- Identificar patrones y tendencias
-- Detectar problemas y cuellos de botella
-- Sugerir acciones concretas y optimizaciones
-- Aprender del contexto histórico y actual
-- Analizar archivos (imágenes, PDFs, documentos)
-- Generar reportes y insights profundos
-
-CONTEXTO DEL SISTEMA (DATOS EN TIEMPO REAL):
-- Total de tareas: ${systemContext.totalTasks}
-- Tareas completadas: ${systemContext.completedTasks}
-- Tareas en progreso: ${systemContext.inProgressTasks}
-
-DISTRIBUCIÓN POR ESTADO:
-${Object.entries(systemContext.statusDistribution).map(([status, count]) => `- ${status}: ${count} tareas`).join('\n')}
-
-CARGA DE TRABAJO POR PERSONA:
-${systemContext.workloadByMember.map((w) => `- ${w.name}: ${w.taskCount} tareas (${w.highPriority} alta prioridad)`).join('\n')}
-
-ACTIVIDAD RECIENTE:
-${systemContext.recentActivity.map((a) => `- ${a.user}: ${a.movement} (${a.time})`).join('\n')}
-
-MIEMBROS DEL EQUIPO:
-${systemContext.teamMembers.map((m) => `- ${m.name} (${m.role})`).join('\n')}
-
-COLUMNAS DEL TABLERO:
-${systemContext.columns.map((c) => `- ${c.label} (${c.id}): ${c.description}`).join('\n')}
-
-INSTRUCCIONES AGÉNTICAS:
-- Responde en español de manera clara, profesional y accionable
-- Analiza los datos proporcionados y extrae insights profundos
-- Identifica problemas proactivamente (cuellos de botella, sobrecargas, retrasos)
-- Sugiere acciones concretas y priorizadas
-- Si hay archivos adjuntos, analízalos en detalle y relaciona con el contexto del sistema
-- Aprende de los patrones que observas en los datos
-- Sé proactivo: no solo respondas, también anticipa problemas y oportunidades
-- Proporciona métricas, comparaciones y análisis cuantitativos cuando sea relevante
-
-`
+      // Usar gemini-2.5-flash (o gemini-pro-vision si hay imágenes)
+      const modelName = hasImages ? 'gemini-2.5-flash' : 'gemini-2.5-flash'
 
       // Mantener historial de conversación (últimos 5 mensajes)
       const recentMessages = messages.slice(-5)
@@ -203,88 +105,32 @@ INSTRUCCIONES AGÉNTICAS:
         .map((msg) => `${msg.role === 'user' ? 'Usuario' : 'PlotAI'}: ${msg.content}`)
         .join('\n\n')
 
-      if (hasImages && userMessage.attachments) {
-        // Para imágenes, usar la API de visión
-        const imageAttachments = userMessage.attachments.filter((att) => att.type.startsWith('image/'))
-        const textAttachments = userMessage.attachments.filter((att) => !att.type.startsWith('image/'))
-        
-        const imageParts = imageAttachments
-          .map((att) => {
-            const base64Match = att.content.match(/\[IMAGEN_BASE64:(.+?):(.+?)\]/)
-            if (base64Match) {
-              return {
-                inlineData: {
-                  data: base64Match[1],
-                  mimeType: att.type
-                }
-              }
-            }
-            return null
-          })
-          .filter((part): part is { inlineData: { data: string; mimeType: string } } => part !== null)
+      const userPrompt = `PREGUNTA DEL USUARIO:\n${userMessage.content}`
 
-        if (textAttachments.length > 0) {
-          prompt += `\nARCHIVOS DE TEXTO ADJUNTOS:\n`
-          textAttachments.forEach((att, idx) => {
-            prompt += `\nArchivo ${idx + 1}: ${att.name} (${att.type})\n`
-            prompt += `Contenido:\n${att.content}\n`
-          })
-        }
+      const response = await generateContent({
+        model: modelName,
+        contents: userPrompt,
+        systemContext,
+        conversationHistory,
+        attachments: userMessage.attachments
+      })
 
-        prompt += `\nPREGUNTA DEL USUARIO:\n${userMessage.content}\n\n`
-        if (conversationHistory) {
-          prompt += `HISTORIAL DE CONVERSACIÓN:\n${conversationHistory}\n\n`
-        }
-        prompt += `PlotAI: Analiza las imágenes adjuntas en el contexto del sistema de producción gráfica y responde de manera útil y contextualizada.`
-
-        const result = await model.generateContent([prompt, ...imageParts])
-        const response = await result.response
-        const text = response.text()
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: text,
-          timestamp: new Date()
-        }
-
-        setMessages((prev) => [...prev, assistantMessage])
-      } else {
-        // Para texto sin imágenes
-        if (userMessage.attachments && userMessage.attachments.length > 0) {
-          prompt += `\nARCHIVOS ADJUNTOS:\n`
-          userMessage.attachments.forEach((att, idx) => {
-            prompt += `\nArchivo ${idx + 1}: ${att.name} (${att.type})\n`
-            prompt += `Contenido:\n${att.content}\n`
-          })
-          prompt += `\nPor favor, analiza estos archivos en el contexto del sistema de producción gráfica.\n`
-        }
-
-        prompt += `\nPREGUNTA DEL USUARIO:\n${userMessage.content}\n\n`
-        if (conversationHistory) {
-          prompt += `HISTORIAL DE CONVERSACIÓN:\n${conversationHistory}\n\n`
-        }
-        prompt += `PlotAI: Responde de manera útil y contextualizada.`
-
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text()
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: text,
-          timestamp: new Date()
-        }
-
-        setMessages((prev) => [...prev, assistantMessage])
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date()
       }
+
+      setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       console.error('Error en PlotAI:', error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, verifica tu API key de Gemini o intenta nuevamente.',
+        content: error instanceof Error 
+          ? `Error: ${error.message}`
+          : 'Lo siento, hubo un error al procesar tu mensaje. Por favor, verifica tu API key de Gemini o intenta nuevamente.',
         timestamp: new Date()
       }
       setMessages((prev) => [...prev, errorMessage])
