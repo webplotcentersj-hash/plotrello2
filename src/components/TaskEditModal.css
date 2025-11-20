@@ -289,9 +289,24 @@
   border: 1px solid var(--surface-border);
 }
 
+.upload-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+  font-size: 0.75rem;
+}
+
 .file-item span {
   color: var(--text-primary);
   font-size: 0.9rem;
+}
+
+.upload-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin: 6px 0 0;
 }
 
 .delete-file {
@@ -375,6 +390,13 @@
 .btn-save:hover {
   background: #2fb882;
   transform: translateY(-1px);
+}
+
+.btn-create:disabled,
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-delete {

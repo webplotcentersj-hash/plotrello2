@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Task, TeamMember } from '../types/board'
 import type { MaterialRecord, SectorRecord } from '../types/api'
+import { uploadAttachmentAndGetUrl } from '../utils/storage'
 import './TaskEditModal.css'
 
 type TaskEditModalProps = {
@@ -17,7 +18,8 @@ type LocalAttachment = {
   id: string
   name: string
   previewUrl: string
-  file?: File
+  remoteUrl?: string
+  uploading: boolean
 }
 
 const COMPLEXITY_OPTIONS = ['Baja', 'Media', 'Alta']
@@ -38,11 +40,13 @@ const TaskEditModal = ({
   const [materialSearch, setMaterialSearch] = useState('')
   const [sectorSearch, setSectorSearch] = useState('')
   const [attachments, setAttachments] = useState<LocalAttachment[]>([])
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [complexity, setComplexity] = useState<string>('Baja')
   const [estimatedTime, setEstimatedTime] = useState<string>('00:00')
   const [isSectorDropdownOpen, setIsSectorDropdownOpen] = useState(false)
   const [isMaterialDropdownOpen, setIsMaterialDropdownOpen] = useState(false)
   const attachmentsRef = useRef<LocalAttachment[]>([])
+  const hasPendingUploads = attachments.some((attachment) => attachment.uploading)
 
   useEffect(() => {
     if (task) {
@@ -69,7 +73,9 @@ const TaskEditModal = ({
               {
                 id: 'existing-photo',
                 name: task.photoUrl.split('/').pop() || 'Adjunto',
-                previewUrl: task.photoUrl
+                previewUrl: task.photoUrl,
+                remoteUrl: task.photoUrl,
+                uploading: false
               }
             ]
           : []
@@ -86,6 +92,11 @@ const TaskEditModal = ({
   if (!task) return null
 
   const handleSave = () => {
+    if (hasPendingUploads) {
+      alert('Espera a que termine la subida de archivos antes de guardar.')
+      return
+    }
+
     const updated: Task = {
       ...task,
       ...formData,
@@ -134,22 +145,34 @@ const TaskEditModal = ({
     setSelectedSectors(selectedSectors.filter((s) => s !== sector))
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files?.length) return
 
-    const newEntries: LocalAttachment[] = Array.from(files).map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      previewUrl: URL.createObjectURL(file),
-      file
-    }))
+    setUploadError(null)
 
-    setAttachments((prev) => [...prev, ...newEntries])
-    setFormData((prev) => ({
-      ...prev,
-      photoUrl: prev?.photoUrl || newEntries[0]?.previewUrl || ''
-    }))
+    for (const file of Array.from(files)) {
+      const id = crypto.randomUUID()
+      const previewUrl = URL.createObjectURL(file)
+      setAttachments((prev) => [...prev, { id, name: file.name, previewUrl, uploading: true }])
+
+      try {
+        const remoteUrl = await uploadAttachmentAndGetUrl(file, `capturas/${task?.id ?? 'sin-id'}`)
+        setAttachments((prev) =>
+          prev.map((attachment) =>
+            attachment.id === id ? { ...attachment, remoteUrl, uploading: false } : attachment
+          )
+        )
+      } catch (error) {
+        console.error('Error subiendo archivo', error)
+        setUploadError('No se pudo subir el archivo. Intenta nuevamente.')
+        setAttachments((prev) => prev.filter((attachment) => attachment.id !== id))
+        if (previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrl)
+        }
+      }
+    }
+
     event.target.value = ''
   }
 
@@ -159,17 +182,18 @@ const TaskEditModal = ({
       if (toRemove?.previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(toRemove.previewUrl)
       }
-      const updated = prev.filter((item) => item.id !== attachmentId)
-      setFormData((current) => ({
-        ...current,
-        photoUrl: updated[0]?.previewUrl || ''
-      }))
-      return updated
+      return prev.filter((item) => item.id !== attachmentId)
     })
   }
 
   useEffect(() => {
     attachmentsRef.current = attachments
+    const firstReady = attachments.find((attachment) => attachment.remoteUrl && !attachment.uploading)
+    if (firstReady?.remoteUrl) {
+      setFormData((prev) => ({ ...prev, photoUrl: firstReady.remoteUrl }))
+    } else if (attachments.length === 0) {
+      setFormData((prev) => ({ ...prev, photoUrl: '' }))
+    }
   }, [attachments])
 
   useEffect(() => {
@@ -337,7 +361,10 @@ const TaskEditModal = ({
                   <div
                     key={sector.id}
                     className="dropdown-item"
-                    onClick={() => handleAddSector(sector.nombre)}
+                    onMouseDown={(event) => {
+                      event.preventDefault()
+                      handleAddSector(sector.nombre)
+                    }}
                   >
                     {sector.nombre}
                   </div>
@@ -391,7 +418,10 @@ const TaskEditModal = ({
                   <div
                     key={material.id}
                     className="dropdown-item"
-                    onClick={() => handleSelectMaterial(material)}
+                    onMouseDown={(event) => {
+                      event.preventDefault()
+                      handleSelectMaterial(material)
+                    }}
                   >
                     <div>
                       <strong>{material.descripcion}</strong>
@@ -437,11 +467,12 @@ const TaskEditModal = ({
                 {attachments.map((file) => (
                   <div key={file.id} className="file-item">
                     <div className="file-preview">
-                      {file.previewUrl.match(/^https?:|^blob:/) ? (
-                        <img src={file.previewUrl} alt={file.name} />
+                      {file.remoteUrl || file.previewUrl ? (
+                        <img src={file.remoteUrl ?? file.previewUrl} alt={file.name} />
                       ) : (
                         <span>{file.name}</span>
                       )}
+                      {file.uploading && <span className="upload-pill">Subiendo...</span>}
                     </div>
                     <button
                       type="button"
@@ -454,12 +485,19 @@ const TaskEditModal = ({
                 ))}
               </div>
             )}
+            {uploadError && <p className="upload-error">{uploadError}</p>}
             <div className="upload-section">
               <label className="upload-button">
                 Seleccionar archivo
                 <input type="file" accept="image/*" onChange={handleFileUpload} hidden />
               </label>
-              <span className="upload-hint">Ningún archivo seleccionado</span>
+              <span className="upload-hint">
+                {hasPendingUploads
+                  ? 'Subiendo archivo...'
+                  : attachments.length === 0
+                    ? 'Ningún archivo seleccionado'
+                    : `${attachments.length} archivo(s) listo(s)`}
+              </span>
             </div>
           </div>
         </div>
@@ -473,7 +511,7 @@ const TaskEditModal = ({
           <button type="button" className="btn-cancel" onClick={onClose}>
             Cancelar
           </button>
-          <button type="button" className="btn-save" onClick={handleSave}>
+          <button type="button" className="btn-save" onClick={handleSave} disabled={hasPendingUploads}>
             Guardar Cambios
           </button>
         </footer>

@@ -13,6 +13,7 @@ export interface OrdenTrabajo {
   sector?: string | null
   materiales?: string | null
   nombre_creador?: string | null
+  foto_url?: string | null
 }
 
 export interface UsuarioRecord {

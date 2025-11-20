@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS public.ordenes_trabajo (
   hora_entrega_efectiva time,
   id_usuario_creador integer REFERENCES public.usuarios(id) ON DELETE SET NULL,
   nombre_creador varchar(100),
+  foto_url text,
   usuario_trabajando_id integer,
   usuario_trabajando_nombre varchar(100),
   timestamp_inicio_trabajo timestamptz

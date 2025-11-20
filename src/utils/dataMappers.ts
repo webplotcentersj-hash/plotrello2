@@ -82,7 +82,7 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => ({
     ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)
     : [],
   assignedSector: orden.sector ?? 'Sin sector',
-  photoUrl: '',
+  photoUrl: orden.foto_url ?? '',
   storyPoints: 0,
   progress: orden.estado?.toLowerCase().includes('finalizado') ? 100 : 50,
   createdAt: orden.fecha_creacion ?? new Date().toISOString(),
@@ -121,7 +121,8 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
   complejidad: mapImpactToComplejidad(task.impact),
   sector: task.assignedSector,
   materiales: task.materials.join(', '),
-  nombre_creador: task.createdBy
+  nombre_creador: task.createdBy,
+  foto_url: task.photoUrl
 })
 
 export const parseTaskIdToOrdenId = (taskId: string): number | null => {

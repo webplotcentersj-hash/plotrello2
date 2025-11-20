@@ -7,9 +7,10 @@ Esta guía documenta cómo reemplazar el backend PHP/MySQL por Supabase mantenie
 1. **Crear proyecto en Supabase** → [app.supabase.com](https://app.supabase.com/)
 2. **Ejecutar `supabase/schema.sql`** en el SQL Editor de Supabase
 3. **Ejecutar `supabase/patches/2024-11-20_fix_sectores_y_creador.sql`** si tu esquema fue creado antes del 20/11
-4. **Ejecutar `supabase/materiales_seed.sql`** en el SQL Editor de Supabase
-5. **Crear archivo `.env`** con tus credenciales de Supabase (copiá `env.example`)
-6. **Crear bucket `archivos`** en Storage (opcional, solo si usás archivos)
+4. **Ejecutar `supabase/patches/2024-11-21_add_foto_url.sql`** para agregar el campo de capturas/fotos
+5. **Ejecutar `supabase/materiales_seed.sql`** en el SQL Editor de Supabase
+6. **Crear archivo `.env`** con tus credenciales de Supabase (copiá `env.example`)
+7. **Crear bucket `archivos`** en Storage (para capturas y adjuntos)
 
 ¡Listo! Ya podés correr `npm run dev` y la app debería funcionar.
 
@@ -51,7 +52,11 @@ VITE_SUPABASE_SCHEMA=u956355532_tg
    - Añadir el campo `nombre_creador`
    - Precargar los sectores (`Diseño Gráfico`, `Taller de Imprenta`, etc.)
 
-4. **Carga los datos de materiales:**
+4. **Ejecuta el parche `supabase/patches/2024-11-21_add_foto_url.sql`:**
+   - Añade la columna `foto_url` a `ordenes_trabajo`
+   - Permite guardar la imagen/captura que se sube desde el frontend
+
+5. **Carga los datos de materiales:**
    - Abre el archivo `supabase/materiales_seed.sql` en tu editor
    - Copia **TODO** el contenido
    - Pégalo en el SQL Editor de Supabase (nueva pestaña o después del paso anterior)
@@ -59,6 +64,17 @@ VITE_SUPABASE_SCHEMA=u956355532_tg
    - ✅ Esto carga los 562 materiales en la tabla
 
 > **Nota:** El `schema.sql` ya incluye las funciones RPC de autenticación (`login_usuario` y `logout_usuario`), así que no necesitás ejecutarlas por separado.
+
+### 2.5 Activar Realtime en las tablas
+
+Para que los cambios se reflejen en tiempo real en el tablero:
+
+1. En Supabase → **Table editor**
+2. Abre `ordenes_trabajo` → pestaña **Realtime** → habilita `Broadcast` y los eventos `INSERT`, `UPDATE` y `DELETE`
+3. Repite lo mismo para `historial_movimientos`
+4. (Opcional) Habilita también `chat_messages` si querés streaming en el chat
+
+Sin estos toggles, el frontend no recibirá notificaciones y tendrás que recargar manualmente.
 
 ### 3. Configurar Row Level Security (RLS) - OPCIONAL
 
