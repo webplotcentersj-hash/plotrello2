@@ -7,17 +7,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. Recrear la función login_usuario con permisos correctos
 CREATE OR REPLACE FUNCTION public.login_usuario(p_usuario text, p_password text)
-RETURNS TABLE (id integer, nombre text, rol text)
+RETURNS TABLE (id integer, nombre character varying, rol character varying)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
   user_rec public.usuarios%ROWTYPE;
 BEGIN
-  SELECT *
+  SELECT u.*
     INTO user_rec
-    FROM public.usuarios
-   WHERE lower(nombre) = lower(p_usuario)
+    FROM public.usuarios AS u
+   WHERE lower(u.nombre) = lower(p_usuario)
    LIMIT 1;
 
   IF NOT FOUND THEN
@@ -25,7 +25,10 @@ BEGIN
   END IF;
 
   IF crypt(p_password, user_rec.password_hash) = user_rec.password_hash THEN
-    RETURN QUERY SELECT user_rec.id, user_rec.nombre, user_rec.rol;
+    RETURN QUERY SELECT 
+      user_rec.id, 
+      user_rec.nombre::character varying, 
+      user_rec.rol::character varying;
   END IF;
 END;
 $$;
