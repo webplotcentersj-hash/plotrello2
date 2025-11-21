@@ -5,7 +5,6 @@ import StatisticsPage from './pages/StatisticsPage'
 import ChatPage from './pages/ChatPage'
 import ClienteConsultaPage from './pages/ClienteConsultaPage'
 import UsuariosPage from './pages/UsuariosPage'
-import DashboardPantallasPage from './pages/DashboardPantallasPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
 import type { ActivityEvent, Task, TeamMember } from './types/board'
@@ -242,66 +241,57 @@ function App() {
     }
   }, [isAuthenticated])
 
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: 'linear-gradient(135deg, #0b0d17 0%, #1a1d2e 100%)',
+        color: '#fff'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid rgba(255,255,255,0.1)',
+          borderTopColor: '#eb671b',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '16px'
+        }}></div>
+        <p>Cargando...</p>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
     <>
       <EnvDebug />
       <BrowserRouter>
-        <Routes>
-          {/* Ruta pública para dashboard de pantallas - no requiere autenticación */}
-          <Route
-            path="/dashboard-pantallas"
-            element={<DashboardPantallasPage />}
-          />
-          {/* Rutas protegidas que requieren autenticación */}
-          <Route
-            path="/*"
-            element={
-              loading ? (
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  justifyContent: 'center', 
-                  alignItems: 'center', 
-                  height: '100vh',
-                  background: 'linear-gradient(135deg, #0b0d17 0%, #1a1d2e 100%)',
-                  color: '#fff'
-                }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    border: '4px solid rgba(255,255,255,0.1)',
-                    borderTopColor: '#eb671b',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                    marginBottom: '16px'
-                  }}></div>
-                  <p>Cargando...</p>
-                  <style>{`
-                    @keyframes spin {
-                      to { transform: rotate(360deg); }
-                    }
-                  `}</style>
-                </div>
-              ) : !isAuthenticated ? (
-                <Login onLogin={handleLogin} />
-              ) : (
-                <AppRoutes 
-                  tasks={tasks} 
-                  setTasks={setTasks} 
-                  activity={activity} 
-                  setActivity={setActivity}
-                  onLogout={handleLogout}
-                  onReloadData={loadRemoteData}
-                  isSyncing={dataLoading}
-                  syncError={dataError}
-                  teamMembers={teamMembers}
-                  sectores={sectores}
-                  materiales={materiales}
-                />
-              )
-            }
-          />
-        </Routes>
+        <AppRoutes 
+          tasks={tasks} 
+          setTasks={setTasks} 
+          activity={activity} 
+          setActivity={setActivity}
+          onLogout={handleLogout}
+          onReloadData={loadRemoteData}
+          isSyncing={dataLoading}
+          syncError={dataError}
+          teamMembers={teamMembers}
+          sectores={sectores}
+          materiales={materiales}
+        />
       </BrowserRouter>
     </>
   )
