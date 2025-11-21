@@ -18,10 +18,22 @@ export interface OrdenTrabajo {
   usuario_trabajando_nombre?: string | null
 }
 
+export type UserRole =
+  | 'administracion'
+  | 'gerencia'
+  | 'recursos-humanos'
+  | 'diseno'
+  | 'imprenta'
+  | 'taller-grafico'
+  | 'instalaciones'
+  | 'metalurgica'
+  | 'caja'
+  | 'mostrador'
+
 export interface UsuarioRecord {
   id: number
   nombre: string
-  rol: 'administracion' | 'taller' | 'mostrador'
+  rol: UserRole
 }
 
 export interface SectorRecord {

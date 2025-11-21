@@ -14,9 +14,19 @@ DECLARE
   new_user_id integer;
   password_hash text;
 BEGIN
-  -- Validar que el rol sea válido (solo taller o mostrador, no administracion)
-  IF p_rol NOT IN ('taller', 'mostrador') THEN
-    RAISE EXCEPTION 'El rol debe ser "taller" o "mostrador". Los administradores solo se pueden crear desde la base de datos.';
+  -- Validar que el rol sea válido (roles operativos, no administración)
+  IF p_rol NOT IN (
+    'diseno',
+    'imprenta',
+    'taller-grafico',
+    'instalaciones',
+    'metalurgica',
+    'caja',
+    'mostrador',
+    'recursos-humanos',
+    'gerencia'
+  ) THEN
+    RAISE EXCEPTION 'Rol no permitido. Usa uno de: Diseño, Imprenta, Taller Gráfico, Instalaciones, Metalúrgica, Caja, Mostrador, Recursos Humanos o Gerencia.';
   END IF;
 
   -- Validar que el nombre no esté vacío
@@ -51,5 +61,5 @@ END;
 $$;
 
 -- Comentario sobre la función
-COMMENT ON FUNCTION public.crear_usuario IS 'Crea un nuevo usuario con hash de contraseña. Solo permite crear usuarios con rol "taller" o "mostrador". Los administradores deben crearse directamente desde la base de datos.';
+COMMENT ON FUNCTION public.crear_usuario IS 'Crea un nuevo usuario con hash de contraseña. Permite roles operativos (Diseño, Imprenta, Taller Gráfico, Instalaciones, Metalúrgica, Caja, Mostrador, Recursos Humanos y Gerencia). Los administradores deben crearse directamente desde la base de datos.';
 

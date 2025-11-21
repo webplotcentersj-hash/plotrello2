@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { UsuarioRecord } from '../types/api'
+import type { UsuarioRecord, UserRole } from '../types/api'
 import apiService from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import './UsuariosPage.css'
@@ -11,11 +11,23 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
   const [usuarios, setUsuarios] = useState<UsuarioRecord[]>([])
   const [loadingUsuarios, setLoadingUsuarios] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const roleOptions: Array<{ value: UserRole; label: string; color: string }> = [
+    { value: 'diseno', label: 'Diseño', color: '#f97316' },
+    { value: 'imprenta', label: 'Imprenta', color: '#38bdf8' },
+    { value: 'taller-grafico', label: 'Taller Gráfico', color: '#6366f1' },
+    { value: 'instalaciones', label: 'Instalaciones', color: '#a855f7' },
+    { value: 'metalurgica', label: 'Metalúrgica', color: '#ec4899' },
+    { value: 'caja', label: 'Caja', color: '#facc15' },
+    { value: 'mostrador', label: 'Mostrador', color: '#10b981' },
+    { value: 'recursos-humanos', label: 'Recursos Humanos', color: '#f472b6' },
+    { value: 'gerencia', label: 'Gerencia', color: '#0ea5e9' }
+  ]
+
   const [formData, setFormData] = useState({
     nombre: '',
     password: '',
     confirmPassword: '',
-    rol: 'taller' as 'taller' | 'mostrador'
+    rol: 'diseno' as UserRole
   })
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -40,7 +52,7 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
       const response = await apiService.getUsuarios()
       if (response.success && response.data) {
         // Filtrar solo usuarios no admin
-        const usuariosNoAdmin = response.data.filter(u => u.rol !== 'administracion')
+        const usuariosNoAdmin = response.data.filter((u) => u.rol !== 'administracion')
         setUsuarios(usuariosNoAdmin)
       } else {
         setError('Error al cargar usuarios')
@@ -88,7 +100,7 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
           nombre: '',
           password: '',
           confirmPassword: '',
-          rol: 'taller'
+          rol: 'diseno'
         })
         setShowCreateForm(false)
         await loadUsuarios()
@@ -103,22 +115,16 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
     }
   }
 
-  const getRolLabel = (rol: string) => {
-    const labels: Record<string, string> = {
-      'taller': 'Taller',
-      'mostrador': 'Mostrador',
-      'administracion': 'Administración'
-    }
-    return labels[rol] || rol
+  const getRolLabel = (rol: UserRole) => {
+    const option = roleOptions.find((r) => r.value === rol)
+    if (rol === 'administracion') return 'Administración'
+    return option?.label || rol
   }
 
-  const getRolColor = (rol: string) => {
-    const colors: Record<string, string> = {
-      'taller': '#6366f1',
-      'mostrador': '#10b981',
-      'administracion': '#eb671b'
-    }
-    return colors[rol] || '#6b7280'
+  const getRolColor = (rol: UserRole) => {
+    if (rol === 'administracion') return '#eb671b'
+    const option = roleOptions.find((r) => r.value === rol)
+    return option?.color || '#6b7280'
   }
 
   if (loading) {
@@ -214,13 +220,16 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
                 <select
                   id="rol"
                   value={formData.rol}
-                  onChange={(e) => setFormData({ ...formData, rol: e.target.value as 'taller' | 'mostrador' })}
+                  onChange={(e) => setFormData({ ...formData, rol: e.target.value as UserRole })}
                   disabled={creating}
                 >
-                  <option value="taller">Taller</option>
-                  <option value="mostrador">Mostrador</option>
+                  {roleOptions.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
                 </select>
-                <small className="form-hint">Los usuarios administradores solo se pueden crear desde la base de datos</small>
+                <small className="form-hint">Los usuarios del rol Administración deben crearse desde la base de datos</small>
               </div>
 
               <div className="form-group">
@@ -260,7 +269,7 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
                       nombre: '',
                       password: '',
                       confirmPassword: '',
-                      rol: 'taller'
+                      rol: 'diseno'
                     })
                     setError(null)
                     setSuccess(null)

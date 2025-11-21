@@ -3,7 +3,17 @@ import { useState, useEffect } from 'react'
 export type Usuario = {
   id: number
   nombre: string
-  rol: 'administracion' | 'taller' | 'mostrador'
+  rol:
+    | 'administracion'
+    | 'gerencia'
+    | 'recursos-humanos'
+    | 'diseno'
+    | 'imprenta'
+    | 'taller-grafico'
+    | 'instalaciones'
+    | 'metalurgica'
+    | 'caja'
+    | 'mostrador'
 }
 
 export function useAuth() {
@@ -24,7 +34,7 @@ export function useAuth() {
       }
     } else if (import.meta.env.DEV) {
       // Modo desarrollo: crear un usuario mock si no hay usuario
-      // Para pruebas, puedes cambiar el rol aquí: 'administracion', 'taller', 'mostrador'
+      // Para pruebas, puedes cambiar el rol aquí
       const mockUsuario: Usuario = {
         id: 1,
         nombre: 'Usuario Dev',
@@ -36,14 +46,13 @@ export function useAuth() {
     setLoading(false)
   }, [])
 
-  const isAdmin = usuario?.rol === 'administracion'
-  const isTaller = usuario?.rol === 'taller'
+  const adminRoles: Usuario['rol'][] = ['administracion', 'gerencia']
+  const isAdmin = !!usuario && adminRoles.includes(usuario.rol)
   const isMostrador = usuario?.rol === 'mostrador'
 
   return {
     usuario,
     isAdmin,
-    isTaller,
     isMostrador,
     loading,
     setUsuario

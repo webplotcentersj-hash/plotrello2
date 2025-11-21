@@ -4,7 +4,8 @@ import type {
   MaterialRecord,
   OrdenTrabajo,
   SectorRecord,
-  UsuarioRecord
+  UsuarioRecord,
+  UserRole
 } from '../types/api'
 import { supabase } from './supabaseClient'
 
@@ -467,7 +468,7 @@ class ApiService {
   async createUsuario(usuario: {
     nombre: string
     password: string
-    rol: 'taller' | 'mostrador'
+    rol: UserRole
   }): Promise<ApiResponse<UsuarioRecord>> {
     if (supabase) {
       // Usar función RPC para crear usuario con hash de contraseña
