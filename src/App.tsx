@@ -286,7 +286,7 @@ function App() {
             path="/dashboard-pantallas"
             element={<DashboardPantallasPage />}
           />
-          {/* Rutas protegidas que requieren autenticación */}
+          {/* Rutas protegidas - requieren autenticación */}
           <Route
             path="/*"
             element={
