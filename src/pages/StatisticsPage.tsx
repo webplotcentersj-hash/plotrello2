@@ -55,31 +55,9 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
   const safeActivity = Array.isArray(activity) ? activity : []
   const safeTeamMembers = Array.isArray(teamMembers) ? teamMembers : []
 
-  // Mostrar mensaje de acceso denegado mientras se verifica
-  if (loading) {
-    return (
-      <div className="statistics-page">
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <p>Cargando...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="statistics-page">
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <h2>Acceso Denegado</h2>
-          <p>No tienes permisos para acceder a esta sección.</p>
-          <p>Solo los administradores pueden ver las estadísticas.</p>
-          <button onClick={onBack} className="back-button" style={{ marginTop: '20px' }}>
-            Volver al Tablero
-          </button>
-        </div>
-      </div>
-    )
-  }
+  // IMPORTANTE: Todos los hooks (useMemo) deben estar ANTES de los returns condicionales
+  // para cumplir con las reglas de los hooks de React
+  
   // 1. Órdenes por Estado (Donut Chart)
   const ordersByStatus = useMemo(() => {
     if (!safeTasks || safeTasks.length === 0) return []
@@ -320,6 +298,32 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
       })
       .sort((a, b) => b.daysStalled - a.daysStalled)
   }, [safeTasks])
+
+  // Ahora sí, después de todos los hooks, podemos hacer returns condicionales
+  if (loading) {
+    return (
+      <div className="statistics-page">
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Cargando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="statistics-page">
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <h2>Acceso Denegado</h2>
+          <p>No tienes permisos para acceder a esta sección.</p>
+          <p>Solo los administradores pueden ver las estadísticas.</p>
+          <button onClick={onBack} className="back-button" style={{ marginTop: '20px' }}>
+            Volver al Tablero
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="statistics-page">
