@@ -36,6 +36,7 @@ type BoardPageProps = {
   setActivity: React.Dispatch<React.SetStateAction<ActivityEvent[]>>
   teamMembers: TeamMember[]
   onNavigateToStats: () => void
+  onNavigateToUsuarios?: () => void
   onNavigateToChat?: () => void
   onLogout?: () => void
   onReloadData?: () => Promise<void>
@@ -52,6 +53,7 @@ const BoardPage = ({
   setActivity,
   teamMembers,
   onNavigateToStats,
+  onNavigateToUsuarios,
   onNavigateToChat,
   onLogout,
   onReloadData,
@@ -329,6 +331,7 @@ const BoardPage = ({
         onAddNewOrder={() => setIsCreateModalOpen(true)}
         onOptimizeSprint={() => setIsOptimizerModalOpen(true)}
         onNavigateToStats={onNavigateToStats}
+        onNavigateToUsuarios={onNavigateToUsuarios}
         onNavigateToChat={onNavigateToChat}
         onOpenChatAI={() => setIsChatAIOpen(true)}
         onLogout={onLogout}

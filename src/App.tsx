@@ -4,6 +4,7 @@ import BoardPage from './pages/BoardPage'
 import StatisticsPage from './pages/StatisticsPage'
 import ChatPage from './pages/ChatPage'
 import ClienteConsultaPage from './pages/ClienteConsultaPage'
+import UsuariosPage from './pages/UsuariosPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
 import type { ActivityEvent, Task, TeamMember } from './types/board'
@@ -335,6 +336,7 @@ function AppRoutes({
             setActivity={setActivity}
             teamMembers={teamMembers}
             onNavigateToStats={() => navigate('/statistics')}
+            onNavigateToUsuarios={() => navigate('/usuarios')}
             onNavigateToChat={() => navigate('/chat')}
             onLogout={onLogout}
             onReloadData={onReloadData}
@@ -363,6 +365,10 @@ function AppRoutes({
       <Route
         path="/consulta-cliente"
         element={<ClienteConsultaPage />}
+      />
+      <Route
+        path="/usuarios"
+        element={<UsuariosPage onBack={() => navigate('/')} />}
       />
     </Routes>
   )

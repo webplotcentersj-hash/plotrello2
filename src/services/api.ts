@@ -464,6 +464,53 @@ class ApiService {
       : { success: false, error: 'Usuario no encontrado' }
   }
 
+  async createUsuario(usuario: {
+    nombre: string
+    password: string
+    rol: 'taller' | 'mostrador'
+  }): Promise<ApiResponse<UsuarioRecord>> {
+    if (supabase) {
+      // Usar función RPC para crear usuario con hash de contraseña
+      const { data, error } = await supabase.rpc('crear_usuario', {
+        p_nombre: usuario.nombre.trim(),
+        p_password: usuario.password,
+        p_rol: usuario.rol
+      })
+
+      if (error) {
+        // Si la función RPC no existe, intentar crear directamente (requiere que la contraseña ya esté hasheada)
+        console.warn('⚠️ Función RPC crear_usuario no encontrada. Intentando método alternativo...')
+        
+        // Nota: Esto requiere que la extensión pgcrypto esté habilitada
+        // y que tengamos permisos para ejecutar crypt()
+        // Por ahora, retornamos error para que se use la función RPC
+        return { success: false, error: error.message || 'Error al crear usuario. Asegúrate de que la función crear_usuario exista en la base de datos.' }
+      }
+
+      if (!data || data.length === 0) {
+        return { success: false, error: 'No se pudo crear el usuario' }
+      }
+
+      return { success: true, data: data[0] as UsuarioRecord }
+    }
+
+    if (hasLegacyBackend) {
+      return this.legacyRequest('/usuarios.php', {
+        method: 'POST',
+        body: JSON.stringify(usuario)
+      })
+    }
+
+    // Fallback: crear usuario mock
+    const nuevoUsuario: UsuarioRecord = {
+      id: fallbackUsuarios.length + 1,
+      nombre: usuario.nombre,
+      rol: usuario.rol
+    }
+    fallbackUsuarios.push(nuevoUsuario)
+    return { success: true, data: nuevoUsuario }
+  }
+
   // ========== CHAT ==========
   async getMensajesChat(canal: string, limit: number = 50): Promise<ApiResponse<ChatMessageUI[]>> {
     if (supabase) {
