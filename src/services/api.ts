@@ -471,6 +471,9 @@ class ApiService {
     if (supabase) {
       const roomId = chatChannelToRoom[mensaje.canal] ?? 1
 
+      // Asegurar que el room existe antes de insertar
+      await this.ensureChatRoomExists(roomId, mensaje.canal)
+
       const payload = {
         room_id: roomId,
         id_usuario: mensaje.usuario_id,
@@ -722,6 +725,61 @@ class ApiService {
     }
 
     return { success: false, error: 'Supabase no configurado' }
+  }
+
+  // Método privado para asegurar que un chat_room existe
+  private async ensureChatRoomExists(roomId: number, canalNombre: string): Promise<void> {
+    if (!supabase) return
+
+    try {
+      // Verificar si el room existe
+      const { data: existingRoom, error: checkError } = await supabase
+        .from('chat_rooms')
+        .select('id')
+        .eq('id', roomId)
+        .maybeSingle()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.warn('Error verificando chat_room:', checkError)
+      }
+
+      // Si no existe, crearlo
+      if (!existingRoom) {
+        const roomNames: Record<number, string> = {
+          1: 'General',
+          2: 'Taller Gráfico',
+          3: 'Mostrador'
+        }
+
+        const { error: insertError } = await supabase
+          .from('chat_rooms')
+          .insert({
+            id: roomId,
+            nombre: roomNames[roomId] || canalNombre,
+            tipo: 'publico'
+          })
+
+        if (insertError) {
+          console.warn('Error creando chat_room:', insertError)
+          // Si falla por IDENTITY, intentar sin especificar ID
+          if (insertError.code === '23505' || insertError.message.includes('identity')) {
+            const { error: retryError } = await supabase
+              .from('chat_rooms')
+              .insert({
+                nombre: roomNames[roomId] || canalNombre,
+                tipo: 'publico'
+              })
+            if (retryError) {
+              console.error('Error creando chat_room sin ID:', retryError)
+            }
+          }
+        } else {
+          console.log(`✅ Chat room ${roomId} creado exitosamente`)
+        }
+      }
+    } catch (error) {
+      console.warn('Error en ensureChatRoomExists:', error)
+    }
   }
 }
 
