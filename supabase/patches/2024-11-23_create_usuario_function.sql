@@ -40,7 +40,7 @@ BEGIN
   END IF;
 
   -- Verificar que el usuario no exista
-  IF EXISTS (SELECT 1 FROM public.usuarios WHERE lower(nombre) = lower(trim(p_nombre))) THEN
+  IF EXISTS (SELECT 1 FROM public.usuarios u WHERE lower(u.nombre) = lower(trim(p_nombre))) THEN
     RAISE EXCEPTION 'El usuario "%" ya existe', trim(p_nombre);
   END IF;
 
