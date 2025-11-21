@@ -50,6 +50,11 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
     }
   }, [isAdmin, loading, navigate])
 
+  // Validar que los datos sean arrays válidos
+  const safeTasks = Array.isArray(tasks) ? tasks : []
+  const safeActivity = Array.isArray(activity) ? activity : []
+  const safeTeamMembers = Array.isArray(teamMembers) ? teamMembers : []
+
   // Mostrar mensaje de acceso denegado mientras se verifica
   if (loading) {
     return (
@@ -77,8 +82,10 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
   }
   // 1. Órdenes por Estado (Donut Chart)
   const ordersByStatus = useMemo(() => {
+    if (!safeTasks || safeTasks.length === 0) return []
     const statusCounts: Record<string, number> = {}
-    tasks.forEach((task) => {
+    safeTasks.forEach((task) => {
+      if (!task || !task.status) return
       const column = BOARD_COLUMNS.find((col) => col.id === task.status)
       const label = column?.label || task.status
       statusCounts[label] = (statusCounts[label] || 0) + 1
@@ -88,12 +95,14 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
       value,
       color: COLORS[name as keyof typeof COLORS] || '#6b7280'
     }))
-  }, [tasks])
+  }, [safeTasks])
 
   // 2. Top 5 Clientes
   const topClients = useMemo(() => {
+    if (!safeTasks || safeTasks.length === 0) return []
     const clientCounts: Record<string, number> = {}
-    tasks.forEach((task) => {
+    safeTasks.forEach((task) => {
+      if (!task || !task.title) return
       const client = task.title
       clientCounts[client] = (clientCounts[client] || 0) + 1
     })
@@ -105,12 +114,14 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         value,
         color: `hsl(${30 + index * 15}, 70%, ${60 - index * 5}%)`
       }))
-  }, [tasks])
+  }, [safeTasks])
 
   // 3. Distribución por Sector
   const distributionBySector = useMemo(() => {
+    if (!safeTasks || safeTasks.length === 0) return []
     const sectorCounts: Record<string, number> = {}
-    tasks.forEach((task) => {
+    safeTasks.forEach((task) => {
+      if (!task) return
       const sector = task.assignedSector || 'Sin sector'
       sectorCounts[sector] = (sectorCounts[sector] || 0) + 1
     })
@@ -119,13 +130,15 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
       value,
       color: index === 0 ? '#3b82f6' : '#22c55e'
     }))
-  }, [tasks])
+  }, [safeTasks])
 
   // 4. Carga de Trabajo por Operario
   const workloadByOperator = useMemo(() => {
+    if (!safeTasks || safeTasks.length === 0) return []
     const operatorCounts: Record<string, number> = {}
-    tasks.forEach((task) => {
-      const member = teamMembers.find((m) => m.id === task.ownerId)
+    safeTasks.forEach((task) => {
+      if (!task) return
+      const member = safeTeamMembers.find((m) => m.id === task.ownerId)
       const operatorName = member?.name || 'Otro'
       operatorCounts[operatorName] = (operatorCounts[operatorName] || 0) + 1
     })
@@ -133,13 +146,15 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
       name,
       Órdenes: value
     }))
-  }, [tasks, teamMembers])
+  }, [safeTasks, safeTeamMembers])
 
   // 5. Movimientos por Usuario
   const movementsByUser = useMemo(() => {
+    if (!safeActivity || safeActivity.length === 0) return []
     const userMovements: Record<string, number> = {}
-    activity.forEach((event) => {
-      const member = teamMembers.find((m) => m.id === event.actorId)
+    safeActivity.forEach((event) => {
+      if (!event || !event.actorId) return
+      const member = safeTeamMembers.find((m) => m.id === event.actorId)
       const userName = member?.name || event.actorId
       userMovements[userName] = (userMovements[userName] || 0) + 1
     })
@@ -149,14 +164,16 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         name,
         Movimientos: value
       }))
-  }, [activity, teamMembers])
+  }, [safeActivity, safeTeamMembers])
 
   // 6. Tiempo Promedio de Reacción por Usuario
   const reactionTimeByUser = useMemo(() => {
+    if (!safeActivity || safeActivity.length === 0) return []
     const userReactionTimes: Record<string, { total: number; count: number }> = {}
     
-    activity.forEach((event) => {
-      const member = teamMembers.find((m) => m.id === event.actorId)
+    safeActivity.forEach((event) => {
+      if (!event || !event.actorId || !event.timestamp) return
+      const member = safeTeamMembers.find((m) => m.id === event.actorId)
       const userName = member?.name || event.actorId
       
       if (!userReactionTimes[userName]) {
@@ -164,12 +181,17 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
       }
       
       // Calcular tiempo de reacción (simulado basado en timestamp)
-      const eventTime = new Date(event.timestamp).getTime()
-      const now = Date.now()
-      const hoursDiff = (now - eventTime) / (1000 * 60 * 60)
-      
-      userReactionTimes[userName].total += hoursDiff
-      userReactionTimes[userName].count += 1
+      try {
+        const eventTime = new Date(event.timestamp).getTime()
+        if (isNaN(eventTime)) return
+        const now = Date.now()
+        const hoursDiff = (now - eventTime) / (1000 * 60 * 60)
+        
+        userReactionTimes[userName].total += hoursDiff
+        userReactionTimes[userName].count += 1
+      } catch (error) {
+        console.warn('Error procesando timestamp:', event.timestamp, error)
+      }
     })
     
     return Object.entries(userReactionTimes)
@@ -178,13 +200,15 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         'Tiempo Promedio (horas)': data.count > 0 ? data.total / data.count : 0
       }))
       .sort((a, b) => b['Tiempo Promedio (horas)'] - a['Tiempo Promedio (horas)'])
-  }, [activity, teamMembers])
+  }, [safeActivity, safeTeamMembers])
 
   // 7. Tiempo Promedio por Estado (Bottleneck Detection)
   const avgTimeByStatus = useMemo(() => {
+    if (!safeTasks || safeTasks.length === 0) return []
     const statusTimes: Record<string, { total: number; count: number }> = {}
     
-    tasks.forEach((task) => {
+    safeTasks.forEach((task) => {
+      if (!task || !task.status || !task.updatedAt) return
       const column = BOARD_COLUMNS.find((col) => col.id === task.status)
       const statusName = column?.label || task.status
       
@@ -192,12 +216,17 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         statusTimes[statusName] = { total: 0, count: 0 }
       }
       
-      const updatedTime = new Date(task.updatedAt).getTime()
-      const now = Date.now()
-      const daysDiff = (now - updatedTime) / (1000 * 60 * 60 * 24)
-      
-      statusTimes[statusName].total += daysDiff
-      statusTimes[statusName].count += 1
+      try {
+        const updatedTime = new Date(task.updatedAt).getTime()
+        if (isNaN(updatedTime)) return
+        const now = Date.now()
+        const daysDiff = (now - updatedTime) / (1000 * 60 * 60 * 24)
+        
+        statusTimes[statusName].total += daysDiff
+        statusTimes[statusName].count += 1
+      } catch (error) {
+        console.warn('Error procesando updatedAt:', task.updatedAt, error)
+      }
     })
     
     return Object.entries(statusTimes)
@@ -206,58 +235,91 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         'Tiempo Promedio (días)': data.count > 0 ? data.total / data.count : 0
       }))
       .sort((a, b) => b['Tiempo Promedio (días)'] - a['Tiempo Promedio (días)'])
-  }, [tasks])
+  }, [safeTasks])
 
   // 8. Registro de Actividad Cronológico
   const chronologicalActivity = useMemo(() => {
-    return [...activity]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    if (!safeActivity || safeActivity.length === 0) return []
+    return [...safeActivity]
+      .filter((event) => event && event.timestamp)
+      .sort((a, b) => {
+        try {
+          const timeA = new Date(a.timestamp).getTime()
+          const timeB = new Date(b.timestamp).getTime()
+          if (isNaN(timeA) || isNaN(timeB)) return 0
+          return timeB - timeA
+        } catch {
+          return 0
+        }
+      })
       .slice(0, 50)
       .map((event) => {
-        const member = teamMembers.find((m) => m.id === event.actorId)
+        const member = safeTeamMembers.find((m) => m.id === event.actorId)
         const fromColumn = BOARD_COLUMNS.find((col) => col.id === event.from)
         const toColumn = BOARD_COLUMNS.find((col) => col.id === event.to)
         
-        return {
-          fechaHora: new Date(event.timestamp).toLocaleString('es-AR', {
+        let fechaHora = 'N/A'
+        try {
+          fechaHora = new Date(event.timestamp).toLocaleString('es-AR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit'
-          }),
+          })
+        } catch (error) {
+          console.warn('Error formateando fecha:', event.timestamp, error)
+        }
+        
+        return {
+          fechaHora,
           usuario: member?.name || '',
-          opNumber: `#${tasks.find((t) => t.id === event.taskId)?.opNumber || 'N/A'}`,
-          movimiento: `${fromColumn?.label || event.from} → ${toColumn?.label || event.to}`
+          opNumber: `#${safeTasks.find((t) => t && t.id === event.taskId)?.opNumber || 'N/A'}`,
+          movimiento: `${fromColumn?.label || event.from || 'N/A'} → ${toColumn?.label || event.to || 'N/A'}`
         }
       })
-  }, [activity, teamMembers, tasks])
+  }, [safeActivity, safeTeamMembers, safeTasks])
 
   // 9. Fichas Estancadas (> 3 días en el mismo estado)
   const stalledTasks = useMemo(() => {
+    if (!safeTasks || safeTasks.length === 0) return []
     const now = Date.now()
     const threeDaysInMs = 3 * 24 * 60 * 60 * 1000
     
-    return tasks
+    return safeTasks
       .filter((task) => {
-        const updatedTime = new Date(task.updatedAt).getTime()
-        return now - updatedTime > threeDaysInMs
+        if (!task || !task.updatedAt) return false
+        try {
+          const updatedTime = new Date(task.updatedAt).getTime()
+          if (isNaN(updatedTime)) return false
+          return now - updatedTime > threeDaysInMs
+        } catch {
+          return false
+        }
       })
       .map((task) => {
         const column = BOARD_COLUMNS.find((col) => col.id === task.status)
-        const daysStalled = Math.floor((now - new Date(task.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+        let daysStalled = 0
+        try {
+          const updatedTime = new Date(task.updatedAt).getTime()
+          if (!isNaN(updatedTime)) {
+            daysStalled = Math.floor((now - updatedTime) / (1000 * 60 * 60 * 24))
+          }
+        } catch (error) {
+          console.warn('Error calculando días estancados:', task.updatedAt, error)
+        }
         
         return {
-          opNumber: task.opNumber,
-          client: task.title,
-          sector: task.assignedSector,
-          status: column?.label || task.status,
+          opNumber: task.opNumber || 'N/A',
+          client: task.title || 'Sin cliente',
+          sector: task.assignedSector || 'Sin sector',
+          status: column?.label || task.status || 'Sin estado',
           daysStalled
         }
       })
       .sort((a, b) => b.daysStalled - a.daysStalled)
-  }, [tasks])
+  }, [safeTasks])
 
   return (
     <div className="statistics-page">
@@ -305,50 +367,62 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
 
           <div className="stat-card">
             <h3>Top 5 Clientes (por N° de trabajos)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={topClients}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {topClients.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {topClients.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={topClients}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {topClients.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                No hay datos para mostrar
+              </div>
+            )}
           </div>
 
           <div className="stat-card">
             <h3>Distribución por Sector</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={distributionBySector}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {distributionBySector.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {distributionBySector.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={distributionBySector}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {distributionBySector.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                No hay datos para mostrar
+              </div>
+            )}
           </div>
         </div>
 
@@ -356,44 +430,62 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         <div className="stats-row">
           <div className="stat-card">
             <h3>Carga de Trabajo por Operario</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={workloadByOperator}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Órdenes" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
+            {workloadByOperator.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={workloadByOperator}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Órdenes" fill="#f97316" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                No hay datos para mostrar
+              </div>
+            )}
           </div>
 
           <div className="stat-card">
             <h3>Movimientos por Usuario</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={movementsByUser}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Movimientos" fill="#a855f7" />
-              </BarChart>
-            </ResponsiveContainer>
+            {movementsByUser.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={movementsByUser}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Movimientos" fill="#a855f7" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                No hay datos para mostrar
+              </div>
+            )}
           </div>
 
           <div className="stat-card">
             <h3>Tiempo Promedio de Reacción por Usuario</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={reactionTimeByUser}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Tiempo Promedio (horas)" fill="#06b6d4" />
-              </BarChart>
-            </ResponsiveContainer>
+            {reactionTimeByUser.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={reactionTimeByUser}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Tiempo Promedio (horas)" fill="#06b6d4" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                No hay datos para mostrar
+              </div>
+            )}
           </div>
         </div>
 
@@ -401,16 +493,22 @@ const StatisticsPage = ({ tasks, activity, teamMembers, onBack }: StatisticsPage
         <div className="stats-row">
           <div className="stat-card full-width">
             <h3>Tiempo Promedio por Estado (Detección de Cuellos de Botella)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={avgTimeByStatus}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Tiempo Promedio (días)" fill="#ef4444" />
-              </BarChart>
-            </ResponsiveContainer>
+            {avgTimeByStatus.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={avgTimeByStatus}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Tiempo Promedio (días)" fill="#ef4444" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                No hay datos para mostrar
+              </div>
+            )}
           </div>
         </div>
 
