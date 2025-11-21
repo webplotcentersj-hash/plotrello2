@@ -54,9 +54,10 @@ BEGIN
 
   -- Retornar el usuario creado (sin la contraseña)
   RETURN QUERY
-  SELECT u.id, u.nombre, u.rol
-  FROM public.usuarios u
-  WHERE u.id = new_user_id;
+  SELECT 
+    new_user_id AS id,
+    trim(p_nombre) AS nombre,
+    p_rol AS rol;
 END;
 $$;
 
