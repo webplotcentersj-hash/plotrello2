@@ -183,6 +183,8 @@
   padding: 32px;
   margin-bottom: 24px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .orden-card:hover {
@@ -190,6 +192,80 @@
   border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.orden-card.ready-for-pickup {
+  border: 2px solid rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.05);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+  animation: pulse-ready 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ready {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+  }
+}
+
+.pickup-banner {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border: 2px solid rgba(34, 197, 94, 0.4);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  animation: slide-in 0.5s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pickup-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pickup-icon {
+  font-size: 2rem;
+  animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.pickup-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.pickup-text strong {
+  font-size: 1.2rem;
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.pickup-text span {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .orden-header {
@@ -222,6 +298,40 @@
   color: #ffffff;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.orden-estado-badge.ready-badge {
+  animation: badge-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(34, 197, 94, 0.7);
+  }
+}
+
+.ready-indicator {
+  font-size: 1.2rem;
+  animation: check-bounce 1s ease-in-out infinite;
+}
+
+@keyframes check-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
 }
 
 .orden-descripcion {

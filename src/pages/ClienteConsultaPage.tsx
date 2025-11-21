@@ -86,6 +86,11 @@ const ClienteConsultaPage = () => {
     return column?.accent || '#6b7280'
   }
 
+  const isReadyForPickup = (estado: string) => {
+    const status = mapEstadoToStatus(estado)
+    return status === 'finalizado-taller' || status === 'almacen-entrega'
+  }
+
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleString('es-AR', {
@@ -174,15 +179,29 @@ const ClienteConsultaPage = () => {
                 (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
               )
 
+              const readyForPickup = isReadyForPickup(orden.estado)
+
               return (
-                <div key={orden.id} className="orden-card">
+                <div key={orden.id} className={`orden-card ${readyForPickup ? 'ready-for-pickup' : ''}`}>
+                  {readyForPickup && (
+                    <div className="pickup-banner">
+                      <div className="pickup-content">
+                        <span className="pickup-icon">🎉</span>
+                        <div className="pickup-text">
+                          <strong>¡Tu pedido está listo para retirar!</strong>
+                          <span>Puedes pasar a buscarlo en nuestro local</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="orden-header">
                     <div className="orden-info">
                       <h3>OP #{orden.numero_op}</h3>
                       <p className="orden-cliente">{orden.cliente}</p>
                     </div>
-                    <div className="orden-estado-badge" style={{ backgroundColor: getEstadoColor(orden.estado) }}>
+                    <div className={`orden-estado-badge ${readyForPickup ? 'ready-badge' : ''}`} style={{ backgroundColor: getEstadoColor(orden.estado) }}>
                       {getEstadoLabel(orden.estado)}
+                      {readyForPickup && <span className="ready-indicator">✓</span>}
                     </div>
                   </div>
 
