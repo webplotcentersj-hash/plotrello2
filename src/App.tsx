@@ -5,6 +5,7 @@ import StatisticsPage from './pages/StatisticsPage'
 import ChatPage from './pages/ChatPage'
 import ClienteConsultaPage from './pages/ClienteConsultaPage'
 import UsuariosPage from './pages/UsuariosPage'
+import DashboardPantallasPage from './pages/DashboardPantallasPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
 import type { ActivityEvent, Task, TeamMember } from './types/board'
@@ -291,7 +292,9 @@ function App() {
           teamMembers={teamMembers}
           sectores={sectores}
           materiales={materiales}
-        />
+        />}
+          />
+        </Routes>
       </BrowserRouter>
     </>
   )
