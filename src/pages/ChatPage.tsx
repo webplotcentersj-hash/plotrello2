@@ -67,8 +67,12 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
   const [input, setInput] = useState('')
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
   const realtimeSubscriptionRef = useRef<any>(null)
   const currentUser = resolvedMembers[0]
 
@@ -267,6 +271,48 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
     }
   }
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length > 0) {
+      setAttachedFiles((prev) => [...prev, ...files])
+      console.log('📎 Archivos seleccionados:', files.map(f => f.name))
+    }
+    // Resetear el input para permitir seleccionar el mismo archivo de nuevo
+    if (event.target) {
+      event.target.value = ''
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '👋', '🤚', '🖐', '✋', '🖖', '👌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤', '👋', '🤚', '🖐', '✋', '🖖', '👌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤']
+
+  const handleEmojiClick = (emoji: string) => {
+    setInput((prev) => prev + emoji)
+    setShowEmojiPicker(false)
+    if (inputRef.current) {
+      inputRef.current.focus()
+    }
+  }
+
+  // Cerrar emoji picker al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showEmojiPicker])
+
   // Función para reproducir sonido de sirena
   const playAlertSound = () => {
     try {
@@ -303,54 +349,94 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
 
   // Función para enviar zumbido
   const handleSendBuzz = async (targetUserId?: string) => {
-    if (!usuario?.id) return
+    if (!usuario?.id) {
+      alert('Debes estar autenticado para enviar un zumbido')
+      return
+    }
 
     // Buscar un usuario diferente al actual
     const availableUsers = resolvedMembers.filter((m) => m.id !== currentUser.id)
-    if (availableUsers.length === 0) return
+    if (availableUsers.length === 0) {
+      alert('No hay otros usuarios en línea para enviar un zumbido')
+      return
+    }
 
     const targetUser = targetUserId 
       ? resolvedMembers.find((m) => m.id === targetUserId && m.id !== currentUser.id)
       : availableUsers[Math.floor(Math.random() * availableUsers.length)]
 
-    if (!targetUser) return
+    if (!targetUser) {
+      alert('No se pudo encontrar un usuario destino')
+      return
+    }
 
     try {
       const targetUserIdNum = parseInt(targetUser.id)
-      if (isNaN(targetUserIdNum)) return
+      if (isNaN(targetUserIdNum)) {
+        alert('ID de usuario inválido')
+        return
+      }
 
-      await apiService.enviarZumbido(targetUserIdNum, usuario.id, currentChannel)
-      // El mensaje se agregará automáticamente vía Realtime
+      console.log(`🔔 Enviando zumbido a ${targetUser.name}`)
+      const response = await apiService.enviarZumbido(targetUserIdNum, usuario.id, currentChannel)
+      
+      if (response.success) {
+        console.log('✅ Zumbido enviado exitosamente')
+        // El mensaje se agregará automáticamente vía Realtime
+      } else {
+        alert(`Error al enviar zumbido: ${response.error || 'Error desconocido'}`)
+      }
     } catch (error) {
-      console.error('Error enviando zumbido:', error)
+      console.error('❌ Error enviando zumbido:', error)
+      alert(`Error al enviar zumbido: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 
   // Función para enviar alerta con sirena
   const handleSendAlert = async (targetUserId?: string) => {
-    if (!usuario?.id) return
+    if (!usuario?.id) {
+      alert('Debes estar autenticado para enviar una alerta')
+      return
+    }
 
     // Buscar un usuario diferente al actual
     const availableUsers = resolvedMembers.filter((m) => m.id !== currentUser.id)
-    if (availableUsers.length === 0) return
+    if (availableUsers.length === 0) {
+      alert('No hay otros usuarios en línea para enviar una alerta')
+      return
+    }
 
     const targetUser = targetUserId 
       ? resolvedMembers.find((m) => m.id === targetUserId && m.id !== currentUser.id)
       : availableUsers[Math.floor(Math.random() * availableUsers.length)]
 
-    if (!targetUser) return
+    if (!targetUser) {
+      alert('No se pudo encontrar un usuario destino')
+      return
+    }
 
     // Reproducir sonido de sirena
     playAlertSound()
 
     try {
       const targetUserIdNum = parseInt(targetUser.id)
-      if (isNaN(targetUserIdNum)) return
+      if (isNaN(targetUserIdNum)) {
+        alert('ID de usuario inválido')
+        return
+      }
 
-      await apiService.enviarAlerta(targetUserIdNum, usuario.id, currentChannel)
-      // El mensaje se agregará automáticamente vía Realtime
+      console.log(`🚨 Enviando alerta a ${targetUser.name}`)
+      const response = await apiService.enviarAlerta(targetUserIdNum, usuario.id, currentChannel)
+      
+      if (response.success) {
+        console.log('✅ Alerta enviada exitosamente')
+        // El mensaje se agregará automáticamente vía Realtime
+      } else {
+        alert(`Error al enviar alerta: ${response.error || 'Error desconocido'}`)
+      }
     } catch (error) {
-      console.error('Error enviando alerta:', error)
+      console.error('❌ Error enviando alerta:', error)
+      alert(`Error al enviar alerta: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 
@@ -525,6 +611,16 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
         </div>
 
         <div className="chat-input-area">
+          {attachedFiles.length > 0 && (
+            <div className="attached-files-preview">
+              {attachedFiles.map((file, index) => (
+                <div key={index} className="attached-file-item">
+                  <span>📎 {file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+                  <button onClick={() => removeFile(index)} className="remove-file-btn">×</button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="input-wrapper">
             <textarea
               ref={inputRef}
@@ -544,6 +640,7 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
                 className="input-action-btn buzz-btn"
                 onClick={() => handleSendBuzz()}
                 title="Enviar zumbido"
+                disabled={!usuario?.id}
               >
                 🔔
               </button>
@@ -551,19 +648,56 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
                 className="input-action-btn alert-btn"
                 onClick={() => handleSendAlert()}
                 title="Enviar alerta con sirena"
+                disabled={!usuario?.id}
               >
                 🚨
               </button>
-              <button className="input-action-btn" title="Adjuntar archivo">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                accept="image/*,application/pdf,.txt,.doc,.docx"
+              />
+              <button
+                className="input-action-btn"
+                onClick={() => fileInputRef.current?.click()}
+                title="Adjuntar archivo"
+                disabled={!usuario?.id}
+              >
                 📎
               </button>
-              <button className="input-action-btn" title="Emoji">
-                😊
-              </button>
+              <div className="emoji-picker-wrapper" ref={emojiPickerRef}>
+                <button
+                  className={`input-action-btn ${showEmojiPicker ? 'active' : ''}`}
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  title="Emoji"
+                  disabled={!usuario?.id}
+                >
+                  😊
+                </button>
+                {showEmojiPicker && (
+                  <div className="emoji-picker">
+                    <div className="emoji-grid">
+                      {emojis.map((emoji, idx) => (
+                        <button
+                          key={idx}
+                          className="emoji-item"
+                          onClick={() => handleEmojiClick(emoji)}
+                          title={emoji}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 className="send-button"
                 onClick={handleSendMessage}
-                disabled={!input.trim()}
+                disabled={!usuario?.id || (!input.trim() && attachedFiles.length === 0)}
                 title="Enviar (Enter)"
               >
                 ➤
