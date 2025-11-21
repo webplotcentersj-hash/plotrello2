@@ -210,7 +210,6 @@ const DashboardPantallasPage = () => {
     const now = currentTime
     const startHour = 8
     const endHour = 21
-    const totalHours = endHour - startHour
     
     const currentHour = now.getHours()
     const currentMinute = now.getMinutes()
