@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import type { TeamMember } from '../types/board'
+import { useAuth } from '../hooks/useAuth'
+import { apiService } from '../services/api'
+import { supabase } from '../services/supabaseClient'
 import './ChatPage.css'
 
 type ChatMessage = {
@@ -29,61 +32,140 @@ const CHANNELS: Channel[] = [
   { id: 'random', name: '# random', description: 'Conversaciones casuales' }
 ]
 
+const chatChannelToRoom: Record<string, number> = {
+  general: 1,
+  'taller-grafico': 2,
+  mostrador: 3,
+  produccion: 1,
+  diseno: 2,
+  imprenta: 3,
+  instalaciones: 1,
+  random: 1
+}
+
+// Mapeo de canales a room_id (usando los mismos IDs que la API)
+const getRoomIdForChannel = (channel: string): number => {
+  return chatChannelToRoom[channel] ?? 1
+}
+
 const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: TeamMember[] }) => {
+  const { usuario } = useAuth()
   const resolvedMembers =
     teamMembers.length > 0
       ? teamMembers
       : [
           {
-            id: 'user1',
-            name: 'Usuario',
+            id: usuario?.id.toString() || 'user1',
+            name: usuario?.nombre || 'Usuario',
             role: 'Miembro',
-            avatar: 'U',
+            avatar: (usuario?.nombre || 'U').charAt(0).toUpperCase(),
             productivity: 0
           }
         ]
   const [currentChannel, setCurrentChannel] = useState<string>('general')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
-  const [currentUser] = useState<TeamMember>(resolvedMembers[0])
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const realtimeSubscriptionRef = useRef<any>(null)
+  const currentUser = resolvedMembers[0]
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Cargar mensajes reales del canal
   useEffect(() => {
-    // Cargar mensajes iniciales del canal
-    const initialMessages: ChatMessage[] = [
-      {
-        id: '1',
-        userId: resolvedMembers[0]?.id || 'user1',
-        userName: resolvedMembers[0]?.name || 'Sistema',
-        userAvatar: resolvedMembers[0]?.avatar || 'S',
-        content: `¡Bienvenido al canal ${CHANNELS.find((c) => c.id === currentChannel)?.name}! 👋`,
-        timestamp: new Date(Date.now() - 3600000),
-        channel: currentChannel
+    const loadMessages = async () => {
+      if (!usuario?.id) return
+      
+      setIsLoadingMessages(true)
+      try {
+        const response = await apiService.getMensajesChat(currentChannel, 100)
+        if (response.success && response.data) {
+          const chatMessages: ChatMessage[] = response.data.map((msg) => ({
+            id: msg.id.toString(),
+            userId: msg.usuario_id.toString(),
+            userName: msg.nombre_usuario || 'Usuario',
+            userAvatar: (msg.nombre_usuario || 'U').charAt(0).toUpperCase(),
+            content: msg.contenido,
+            timestamp: new Date(msg.timestamp),
+            channel: msg.canal || currentChannel,
+            type: msg.tipo || 'message'
+          }))
+          setMessages(chatMessages)
+        }
+      } catch (error) {
+        console.error('Error cargando mensajes:', error)
+      } finally {
+        setIsLoadingMessages(false)
       }
-    ]
-    setMessages(initialMessages)
-  }, [currentChannel])
-
-  const handleSendMessage = () => {
-    if (!input.trim()) return
-
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userAvatar: currentUser.avatar,
-      content: input.trim(),
-      timestamp: new Date(),
-      channel: currentChannel
     }
 
-    setMessages((prev) => [...prev, newMessage])
+    loadMessages()
+  }, [currentChannel, usuario?.id])
+
+  // Suscripción a Supabase Realtime para mensajes nuevos
+  useEffect(() => {
+    if (!supabase || !usuario?.id) return
+
+    const roomId = getRoomIdForChannel(currentChannel)
+
+    // Limpiar suscripción anterior
+    if (realtimeSubscriptionRef.current && supabase) {
+      supabase.removeChannel(realtimeSubscriptionRef.current)
+    }
+
+    // Crear nueva suscripción
+    if (!supabase) return
+    const channel = supabase
+      .channel(`chat:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          const newMsg = payload.new as any
+          // Evitar duplicados: verificar si el mensaje ya existe
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === newMsg.id.toString())
+            if (exists) return prev
+
+            const chatMessage: ChatMessage = {
+              id: newMsg.id.toString(),
+              userId: newMsg.id_usuario.toString(),
+              userName: newMsg.nombre_usuario || 'Usuario',
+              userAvatar: (newMsg.nombre_usuario || 'U').charAt(0).toUpperCase(),
+              content: newMsg.mensaje,
+              timestamp: new Date(newMsg.timestamp),
+              channel: currentChannel,
+              type: newMsg.mensaje?.includes('zumbido') || newMsg.mensaje?.includes('Zumbido') ? 'buzz' : newMsg.mensaje?.includes('Atención') || newMsg.mensaje?.includes('ALERTA') ? 'alert' : 'message'
+            }
+            return [...prev, chatMessage]
+          })
+        }
+      )
+      .subscribe()
+
+    realtimeSubscriptionRef.current = channel
+
+    return () => {
+      if (realtimeSubscriptionRef.current && supabase) {
+        supabase.removeChannel(realtimeSubscriptionRef.current)
+      }
+    }
+  }, [currentChannel, usuario?.id])
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || !usuario?.id) return
+
+    const content = input.trim()
     setInput('')
     
     // Auto-resize textarea
@@ -91,29 +173,24 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
       inputRef.current.style.height = 'auto'
     }
 
-    // Simular respuesta automática después de 2 segundos
-    setTimeout(() => {
-      const randomMember = resolvedMembers[Math.floor(Math.random() * resolvedMembers.length)]
-      if (randomMember && Math.random() > 0.7) {
-        const responses = [
-          'Entendido 👍',
-          'Perfecto, lo reviso',
-          'Gracias por la info',
-          'De acuerdo',
-          'Voy a verificar eso'
-        ]
-        const autoMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          userId: randomMember.id,
-          userName: randomMember.name,
-          userAvatar: randomMember.avatar,
-          content: responses[Math.floor(Math.random() * responses.length)],
-          timestamp: new Date(),
-          channel: currentChannel
-        }
-        setMessages((prev) => [...prev, autoMessage])
+    try {
+      const response = await apiService.enviarMensajeChat({
+        canal: currentChannel,
+        contenido: content,
+        usuario_id: usuario.id,
+        tipo: 'message'
+      })
+
+      if (!response.success) {
+        console.error('Error enviando mensaje:', response.error)
+        // Revertir el input si falla
+        setInput(content)
       }
-    }, 2000)
+      // El mensaje se agregará automáticamente vía Realtime
+    } catch (error) {
+      console.error('Error enviando mensaje:', error)
+      setInput(content)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -158,7 +235,9 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
   }
 
   // Función para enviar zumbido
-  const handleSendBuzz = (targetUserId?: string) => {
+  const handleSendBuzz = async (targetUserId?: string) => {
+    if (!usuario?.id) return
+
     // Buscar un usuario diferente al actual
     const availableUsers = resolvedMembers.filter((m) => m.id !== currentUser.id)
     if (availableUsers.length === 0) return
@@ -169,38 +248,21 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
 
     if (!targetUser) return
 
-    const buzzMessage: ChatMessage = {
-      id: Date.now().toString(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userAvatar: currentUser.avatar,
-      content: `🔔 Zumbido enviado a ${targetUser.name}`,
-      timestamp: new Date(),
-      channel: currentChannel,
-      type: 'buzz'
+    try {
+      const targetUserIdNum = parseInt(targetUser.id)
+      if (isNaN(targetUserIdNum)) return
+
+      await apiService.enviarZumbido(targetUserIdNum, usuario.id, currentChannel)
+      // El mensaje se agregará automáticamente vía Realtime
+    } catch (error) {
+      console.error('Error enviando zumbido:', error)
     }
-
-    setMessages((prev) => [...prev, buzzMessage])
-
-    // Simular que el zumbido llega al usuario (en producción esto sería una notificación real)
-    setTimeout(() => {
-      // Mostrar notificación de zumbido recibido desde la perspectiva del destinatario
-      const receivedBuzz: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        userId: targetUser.id,
-        userName: targetUser.name,
-        userAvatar: targetUser.avatar,
-        content: `🔔 ${currentUser.name} te envió un zumbido`,
-        timestamp: new Date(),
-        channel: currentChannel,
-        type: 'buzz'
-      }
-      setMessages((prev) => [...prev, receivedBuzz])
-    }, 500)
   }
 
   // Función para enviar alerta con sirena
-  const handleSendAlert = (targetUserId?: string) => {
+  const handleSendAlert = async (targetUserId?: string) => {
+    if (!usuario?.id) return
+
     // Buscar un usuario diferente al actual
     const availableUsers = resolvedMembers.filter((m) => m.id !== currentUser.id)
     if (availableUsers.length === 0) return
@@ -214,49 +276,30 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
     // Reproducir sonido de sirena
     playAlertSound()
 
-    const alertMessage: ChatMessage = {
-      id: Date.now().toString(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userAvatar: currentUser.avatar,
-      content: `🚨 Alerta enviada a ${targetUser.name}`,
-      timestamp: new Date(),
-      channel: currentChannel,
-      type: 'alert'
+    try {
+      const targetUserIdNum = parseInt(targetUser.id)
+      if (isNaN(targetUserIdNum)) return
+
+      await apiService.enviarAlerta(targetUserIdNum, usuario.id, currentChannel)
+      // El mensaje se agregará automáticamente vía Realtime
+    } catch (error) {
+      console.error('Error enviando alerta:', error)
     }
-
-    setMessages((prev) => [...prev, alertMessage])
-
-    // Simular que la alerta llega al usuario
-    setTimeout(() => {
-      // Mostrar notificación de alerta recibida desde la perspectiva del destinatario
-      const receivedAlert: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        userId: targetUser.id,
-        userName: targetUser.name,
-        userAvatar: targetUser.avatar,
-        content: `🚨 ${currentUser.name} te envió una ALERTA`,
-        timestamp: new Date(),
-        channel: currentChannel,
-        type: 'alert'
-      }
-      setMessages((prev) => [...prev, receivedAlert])
-    }, 500)
   }
 
   // Efecto para detectar zumbidos y alertas recibidos
   useEffect(() => {
     const lastMessage = messages[messages.length - 1]
     if (lastMessage && (lastMessage.type === 'buzz' || lastMessage.type === 'alert')) {
-      // Solo activar si el mensaje indica que fue recibido (contiene "te envió")
-      if (lastMessage.content.includes('te envió')) {
+      // Activar si el mensaje es para el usuario actual (no es del usuario actual)
+      if (lastMessage.userId !== currentUser.id) {
         triggerShake()
         if (lastMessage.type === 'alert') {
           playAlertSound()
         }
       }
     }
-  }, [messages])
+  }, [messages, currentUser.id])
 
   const formatMessageTime = (date: Date) => {
     return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
@@ -353,7 +396,11 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
 
         <div className="messages-container">
           <div className="messages-list">
-            {channelMessages.length === 0 ? (
+            {isLoadingMessages ? (
+              <div className="empty-state">
+                <p>Cargando mensajes...</p>
+              </div>
+            ) : channelMessages.length === 0 ? (
               <div className="empty-state">
                 <p>No hay mensajes en este canal todavía.</p>
                 <p className="empty-hint">Sé el primero en escribir algo 👋</p>
