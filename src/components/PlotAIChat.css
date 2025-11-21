@@ -31,6 +31,109 @@
   border-bottom: 1px solid var(--surface-border);
 }
 
+.plotai-intel-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  padding: 16px 24px 8px;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.intel-section {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.intel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.intel-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: white;
+}
+
+.intel-label.alert {
+  background: #ff4d4f;
+}
+
+.intel-label.opportunity {
+  background: #36cfc9;
+}
+
+.intel-label.actions {
+  background: #9254de;
+}
+
+.intel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intel-pill {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--surface-border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+}
+
+.intel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(146, 84, 222, 0.3);
+  background: rgba(146, 84, 222, 0.08);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.agent-action strong {
+  font-size: 0.9rem;
+}
+
+.agent-action span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.agent-action:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(146, 84, 222, 0.6);
+}
+
+.agent-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .plotai-header-content {
   display: flex;
   justify-content: space-between;

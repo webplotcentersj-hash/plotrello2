@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import type { Task, TeamMember, ActivityEvent } from '../types/board'
 import { BOARD_COLUMNS } from '../data/mockData'
+import { formatAgenticContextForPrompt } from '../utils/agentInsights'
+import type { AgenticContextPayload } from '../utils/agentInsights'
 
 // El nuevo SDK de Google GenAI puede usar la API key desde variable de entorno
 // o se puede pasar en el constructor si es necesario
@@ -97,6 +99,7 @@ export interface GenerateContentOptions {
   systemContext?: SystemContext
   conversationHistory?: string
   attachments?: Array<{ name: string; type: string; content: string }>
+  agenticContext?: AgenticContextPayload
 }
 
 export async function generateContent(options: GenerateContentOptions): Promise<string> {
@@ -109,7 +112,8 @@ export async function generateContent(options: GenerateContentOptions): Promise<
     contents,
     systemContext,
     conversationHistory,
-    attachments
+    attachments,
+    agenticContext
   } = options
 
   try {
@@ -160,6 +164,11 @@ INSTRUCCIONES AGÉNTICAS:
 
 `
       prompt = contextText + prompt
+    }
+
+    if (agenticContext) {
+      prompt += `\nINTELIGENCIA AGÉNTICA DERIVADA:\n${formatAgenticContextForPrompt(agenticContext)}\n`
+      prompt += `\nConsidera estas señales para priorizar tu respuesta.\n`
     }
 
     if (attachments && attachments.length > 0) {

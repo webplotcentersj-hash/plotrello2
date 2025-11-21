@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Task, TeamMember, ActivityEvent } from '../types/board'
 import { generateContent, getSystemContext } from '../services/plotAIService'
+import { buildAgenticContext } from '../utils/agentInsights'
 import './PlotAIChat.css'
 
 type PlotAIChatProps = {
@@ -32,6 +33,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const agenticContext = useMemo(() => buildAgenticContext(tasks, activity, teamMembers), [tasks, activity, teamMembers])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -71,25 +73,34 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
     })
   }
 
-  const handleSendMessage = async () => {
-    if (!input.trim() && uploadedFiles.length === 0) return
+  const handleSendMessage = async (forcedInput?: string) => {
+    const messageText = forcedInput ?? input
+    const filesToSend = forcedInput ? [] : uploadedFiles
+
+    if (!messageText.trim() && filesToSend.length === 0) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: messageText,
       timestamp: new Date(),
-      attachments: uploadedFiles.length > 0 ? await Promise.all(
-        uploadedFiles.map(async (file) => ({
-          name: file.name,
-          type: file.type,
-          content: await analyzeFile(file)
-        }))
-      ) : undefined
+      attachments:
+        filesToSend.length > 0
+          ? await Promise.all(
+              filesToSend.map(async (file) => ({
+                name: file.name,
+                type: file.type,
+                content: await analyzeFile(file)
+              }))
+            )
+          : undefined
     }
 
     setMessages((prev) => [...prev, userMessage])
-    setInput('')
+    if (!forcedInput) {
+      setInput('')
+      setUploadedFiles([])
+    }
     setIsLoading(true)
 
     try {
@@ -112,7 +123,8 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
         contents: userPrompt,
         systemContext,
         conversationHistory,
-        attachments: userMessage.attachments
+        attachments: userMessage.attachments,
+        agenticContext
       })
 
       const assistantMessage: Message = {
@@ -156,6 +168,10 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
     }
   }
 
+  const handleSuggestedAction = (prompt: string) => {
+    handleSendMessage(prompt)
+  }
+
   return (
     <div className="plotai-overlay" onClick={onClose}>
       <div className="plotai-chat" onClick={(e) => e.stopPropagation()}>
@@ -170,6 +186,55 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
             </button>
           </div>
         </header>
+
+        <div className="plotai-intel-panel">
+          <div className="intel-section">
+            <div className="intel-header">
+              <span className="intel-label alert">Alertas críticas</span>
+            </div>
+            <div className="intel-list">
+              {(agenticContext.alerts.length > 0 ? agenticContext.alerts : ['Sin alertas críticas detectadas']).map(
+                (alert, idx) => (
+                  <div key={`alert-${idx}`} className="intel-pill">
+                    {alert}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+          <div className="intel-section">
+            <div className="intel-header">
+              <span className="intel-label opportunity">Oportunidades</span>
+            </div>
+            <div className="intel-list">
+              {(agenticContext.opportunities.length > 0
+                ? agenticContext.opportunities
+                : ['Sin oportunidades destacadas']).map((item, idx) => (
+                <div key={`opp-${idx}`} className="intel-pill">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="intel-section">
+            <div className="intel-header">
+              <span className="intel-label actions">Acciones agénticas</span>
+            </div>
+            <div className="intel-actions">
+              {agenticContext.suggestedActions.map((action) => (
+                <button
+                  key={action.id}
+                  className="agent-action"
+                  onClick={() => handleSuggestedAction(action.prompt)}
+                  disabled={isLoading}
+                >
+                  <strong>{action.label}</strong>
+                  <span>{action.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <div className="plotai-messages">
           {messages.map((message) => (
@@ -248,7 +313,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
             />
             <button
               className="send-button"
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
             >
               {isLoading ? '⏳' : '➤'}
