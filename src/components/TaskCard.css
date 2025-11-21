@@ -512,7 +512,17 @@
 
 .priority-alta {
   border-left: 4px solid #ff4444;
-  background: linear-gradient(90deg, rgba(255, 68, 68, 0.12) 0%, rgba(11, 13, 23, 0.95) 10%);
+  background: linear-gradient(90deg, rgba(255, 68, 68, 0.15) 0%, rgba(5, 6, 15, 0.98) 12%);
+}
+
+.priority-alta:hover {
+  border-color: #ff4444;
+  box-shadow: 
+    0 15px 45px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(255, 68, 68, 0.4),
+    0 0 40px rgba(255, 68, 68, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-left-color: #ff6b6b;
 }
 
 .priority-alta .task-op {
@@ -530,7 +540,17 @@
 
 .priority-media {
   border-left: 4px solid #ffcf5c;
-  background: linear-gradient(90deg, rgba(255, 207, 92, 0.12) 0%, rgba(11, 13, 23, 0.95) 10%);
+  background: linear-gradient(90deg, rgba(255, 207, 92, 0.15) 0%, rgba(5, 6, 15, 0.98) 12%);
+}
+
+.priority-media:hover {
+  border-color: #ffcf5c;
+  box-shadow: 
+    0 15px 45px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(255, 207, 92, 0.4),
+    0 0 40px rgba(255, 207, 92, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-left-color: #ffd93d;
 }
 
 .priority-media .task-op {
@@ -548,7 +568,17 @@
 
 .priority-baja {
   border-left: 4px solid #3dd598;
-  background: linear-gradient(90deg, rgba(61, 213, 152, 0.12) 0%, rgba(11, 13, 23, 0.95) 10%);
+  background: linear-gradient(90deg, rgba(61, 213, 152, 0.15) 0%, rgba(5, 6, 15, 0.98) 12%);
+}
+
+.priority-baja:hover {
+  border-color: #3dd598;
+  box-shadow: 
+    0 15px 45px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(61, 213, 152, 0.4),
+    0 0 40px rgba(61, 213, 152, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-left-color: #4ecdc4;
 }
 
 .priority-baja .task-op {
