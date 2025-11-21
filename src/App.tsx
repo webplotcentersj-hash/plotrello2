@@ -280,19 +280,30 @@ function App() {
     <>
       <EnvDebug />
       <BrowserRouter>
-        <AppRoutes 
-          tasks={tasks} 
-          setTasks={setTasks} 
-          activity={activity} 
-          setActivity={setActivity}
-          onLogout={handleLogout}
-          onReloadData={loadRemoteData}
-          isSyncing={dataLoading}
-          syncError={dataError}
-          teamMembers={teamMembers}
-          sectores={sectores}
-          materiales={materiales}
-        />}
+        <Routes>
+          {/* Ruta pública para dashboard de pantallas - no requiere autenticación */}
+          <Route
+            path="/dashboard-pantallas"
+            element={<DashboardPantallasPage />}
+          />
+          {/* Rutas protegidas que requieren autenticación */}
+          <Route
+            path="/*"
+            element={
+              <AppRoutes 
+                tasks={tasks} 
+                setTasks={setTasks} 
+                activity={activity} 
+                setActivity={setActivity}
+                onLogout={handleLogout}
+                onReloadData={loadRemoteData}
+                isSyncing={dataLoading}
+                syncError={dataError}
+                teamMembers={teamMembers}
+                sectores={sectores}
+                materiales={materiales}
+              />
+            }
           />
         </Routes>
       </BrowserRouter>
