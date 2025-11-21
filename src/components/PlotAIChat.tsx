@@ -398,207 +398,215 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
           </div>
         </header>
 
-        <div className="plotai-intel-panel">
-          <div className="intel-section">
-            <div className="intel-header">
-              <span className="intel-label alert">Alertas críticas</span>
-            </div>
-            <div className="intel-list">
-              {(agenticContext.alerts.length > 0 ? agenticContext.alerts : ['Sin alertas críticas detectadas']).map(
-                (alert, idx) => (
-                  <div key={`alert-${idx}`} className="intel-pill">
-                    {alert}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-          <div className="intel-section">
-            <div className="intel-header">
-              <span className="intel-label opportunity">Oportunidades</span>
-            </div>
-            <div className="intel-list">
-              {(agenticContext.opportunities.length > 0
-                ? agenticContext.opportunities
-                : ['Sin oportunidades destacadas']).map((item, idx) => (
-                <div key={`opp-${idx}`} className="intel-pill">
-                  {item}
+        <div className="plotai-body">
+          <aside className="plotai-side-panel">
+            <div className="plotai-intel-panel">
+              <div className="intel-section">
+                <div className="intel-header">
+                  <span className="intel-label alert">Alertas críticas</span>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="intel-section">
-            <div className="intel-header">
-              <span className="intel-label actions">Acciones agénticas</span>
-            </div>
-            <div className="intel-actions">
-              {agenticContext.suggestedActions.map((action) => (
-                <button
-                  key={action.id}
-                  className="agent-action"
-                  onClick={() => handleSuggestedAction(action.prompt)}
-                  disabled={isLoading}
-                >
-                  <strong>{action.label}</strong>
-                  <span>{action.description}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="intel-section wide">
-            <div className="intel-header">
-              <span className="intel-label creation">Crear OP desde el chat</span>
-              <button className="intel-toggle" onClick={toggleCreateOpPanel}>
-                {isCreateOpOpen ? 'Cerrar' : 'Abrir'}
-              </button>
-            </div>
-            {isCreateOpOpen ? (
-              <form className="quick-op-form" onSubmit={handleQuickOpSubmit}>
-                <div className="quick-op-grid">
-                  <label>
-                    N° OP (opcional)
-                    <input
-                      type="text"
-                      value={quickOpForm.opNumber}
-                      onChange={(e) => handleQuickOpChange('opNumber', e.target.value)}
-                      placeholder="Ej: OP-1240"
-                    />
-                  </label>
-                  <label>
-                    Cliente / Proyecto *
-                    <input
-                      type="text"
-                      value={quickOpForm.cliente}
-                      onChange={(e) => handleQuickOpChange('cliente', e.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Responsable
-                    <select
-                      value={quickOpForm.ownerId}
-                      onChange={(e) => handleQuickOpChange('ownerId', e.target.value)}
-                    >
-                      {teamMembers.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Estado inicial
-                    <select
-                      value={quickOpForm.status}
-                      onChange={(e) => handleQuickOpChange('status', e.target.value)}
-                    >
-                      {BOARD_COLUMNS.map((column) => (
-                        <option key={column.id} value={column.id}>
-                          {column.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Prioridad
-                    <select
-                      value={quickOpForm.priority}
-                      onChange={(e) => handleQuickOpChange('priority', e.target.value)}
-                    >
-                      <option value="alta">Alta</option>
-                      <option value="media">Media</option>
-                      <option value="baja">Baja</option>
-                    </select>
-                  </label>
-                  <label>
-                    Impacto
-                    <select
-                      value={quickOpForm.impact}
-                      onChange={(e) => handleQuickOpChange('impact', e.target.value)}
-                    >
-                      <option value="alta">Alta</option>
-                      <option value="media">Media</option>
-                      <option value="low">Baja</option>
-                    </select>
-                  </label>
-                  <label>
-                    Fecha compromiso
-                    <input
-                      type="date"
-                      value={quickOpForm.dueDate}
-                      onChange={(e) => handleQuickOpChange('dueDate', e.target.value)}
-                    />
-                  </label>
+                <div className="intel-list">
+                  {(agenticContext.alerts.length > 0
+                    ? agenticContext.alerts
+                    : ['Sin alertas críticas detectadas']
+                  ).map((alert, idx) => (
+                    <div key={`alert-${idx}`} className="intel-pill">
+                      {alert}
+                    </div>
+                  ))}
                 </div>
-                <label className="quick-op-description">
-                  Descripción *
-                  <textarea
-                    value={quickOpForm.descripcion}
-                    onChange={(e) => handleQuickOpChange('descripcion', e.target.value)}
-                    placeholder="Detalles de la orden, materiales, alcance..."
-                    rows={3}
-                    required
-                  />
-                </label>
-                <div className="quick-op-actions">
-                  <button type="button" className="ghost" onClick={toggleCreateOpPanel}>
-                    Cancelar
-                  </button>
-                  <button type="submit" className="primary" disabled={isCreatingOp}>
-                    {isCreatingOp ? 'Creando...' : 'Crear OP'}
-                  </button>
-                </div>
-                {createOpFeedback && (
-                  <div className={`quick-op-feedback ${createOpFeedback.type}`}>
-                    {createOpFeedback.message}
-                  </div>
-                )}
-              </form>
-            ) : (
-              <p className="intel-hint">Generá una orden de producción sin salir del chat.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="plotai-messages">
-          {messages.map((message) => (
-            <div key={message.id} className={`plotai-message ${message.role}`}>
-              <div className="message-avatar">
-                {message.role === 'user' ? '👤' : '🤖'}
               </div>
-              <div className="message-content">
-                <div className="message-text">{message.content}</div>
-                {message.attachments && message.attachments.length > 0 && (
-                  <div className="message-attachments">
-                    {message.attachments.map((att, idx) => (
-                      <div key={idx} className="attachment-item">
-                        📎 {att.name}
+              <div className="intel-section">
+                <div className="intel-header">
+                  <span className="intel-label opportunity">Oportunidades</span>
+                </div>
+                <div className="intel-list">
+                  {(agenticContext.opportunities.length > 0
+                    ? agenticContext.opportunities
+                    : ['Sin oportunidades destacadas']
+                  ).map((item, idx) => (
+                    <div key={`opp-${idx}`} className="intel-pill">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="intel-section">
+                <div className="intel-header">
+                  <span className="intel-label actions">Acciones agénticas</span>
+                </div>
+                <div className="intel-actions">
+                  {agenticContext.suggestedActions.map((action) => (
+                    <button
+                      key={action.id}
+                      className="agent-action"
+                      onClick={() => handleSuggestedAction(action.prompt)}
+                      disabled={isLoading}
+                    >
+                      <strong>{action.label}</strong>
+                      <span>{action.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="intel-section wide">
+                <div className="intel-header">
+                  <span className="intel-label creation">Crear OP desde el chat</span>
+                  <button className="intel-toggle" onClick={toggleCreateOpPanel}>
+                    {isCreateOpOpen ? 'Cerrar' : 'Abrir'}
+                  </button>
+                </div>
+                {isCreateOpOpen ? (
+                  <form className="quick-op-form" onSubmit={handleQuickOpSubmit}>
+                    <div className="quick-op-grid">
+                      <label>
+                        N° OP (opcional)
+                        <input
+                          type="text"
+                          value={quickOpForm.opNumber}
+                          onChange={(e) => handleQuickOpChange('opNumber', e.target.value)}
+                          placeholder="Ej: OP-1240"
+                        />
+                      </label>
+                      <label>
+                        Cliente / Proyecto *
+                        <input
+                          type="text"
+                          value={quickOpForm.cliente}
+                          onChange={(e) => handleQuickOpChange('cliente', e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Responsable
+                        <select
+                          value={quickOpForm.ownerId}
+                          onChange={(e) => handleQuickOpChange('ownerId', e.target.value)}
+                        >
+                          {teamMembers.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Estado inicial
+                        <select
+                          value={quickOpForm.status}
+                          onChange={(e) => handleQuickOpChange('status', e.target.value)}
+                        >
+                          {BOARD_COLUMNS.map((column) => (
+                            <option key={column.id} value={column.id}>
+                              {column.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Prioridad
+                        <select
+                          value={quickOpForm.priority}
+                          onChange={(e) => handleQuickOpChange('priority', e.target.value)}
+                        >
+                          <option value="alta">Alta</option>
+                          <option value="media">Media</option>
+                          <option value="baja">Baja</option>
+                        </select>
+                      </label>
+                      <label>
+                        Impacto
+                        <select
+                          value={quickOpForm.impact}
+                          onChange={(e) => handleQuickOpChange('impact', e.target.value)}
+                        >
+                          <option value="alta">Alta</option>
+                          <option value="media">Media</option>
+                          <option value="low">Baja</option>
+                        </select>
+                      </label>
+                      <label>
+                        Fecha compromiso
+                        <input
+                          type="date"
+                          value={quickOpForm.dueDate}
+                          onChange={(e) => handleQuickOpChange('dueDate', e.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <label className="quick-op-description">
+                      Descripción *
+                      <textarea
+                        value={quickOpForm.descripcion}
+                        onChange={(e) => handleQuickOpChange('descripcion', e.target.value)}
+                        placeholder="Detalles de la orden, materiales, alcance..."
+                        rows={3}
+                        required
+                      />
+                    </label>
+                    <div className="quick-op-actions">
+                      <button type="button" className="ghost" onClick={toggleCreateOpPanel}>
+                        Cancelar
+                      </button>
+                      <button type="submit" className="primary" disabled={isCreatingOp}>
+                        {isCreatingOp ? 'Creando...' : 'Crear OP'}
+                      </button>
+                    </div>
+                    {createOpFeedback && (
+                      <div className={`quick-op-feedback ${createOpFeedback.type}`}>
+                        {createOpFeedback.message}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </form>
+                ) : (
+                  <p className="intel-hint">Generá una orden de producción sin salir del chat.</p>
                 )}
-                <div className="message-time">
-                  {message.timestamp.toLocaleTimeString('es-AR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
               </div>
             </div>
-          ))}
-          {isLoading && (
-            <div className="plotai-message assistant">
-              <div className="message-avatar">🤖</div>
-              <div className="message-content">
-                <div className="loading-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+          </aside>
+
+          <section className="plotai-chat-stream">
+            <div className="plotai-messages">
+              {messages.map((message) => (
+                <div key={message.id} className={`plotai-message ${message.role}`}>
+                  <div className="message-avatar">
+                    {message.role === 'user' ? '👤' : '🤖'}
+                  </div>
+                  <div className="message-content">
+                    <div className="message-text">{message.content}</div>
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="message-attachments">
+                        {message.attachments.map((att, idx) => (
+                          <div key={idx} className="attachment-item">
+                            📎 {att.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="message-time">
+                      {message.timestamp.toLocaleTimeString('es-AR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {isLoading && (
+                <div className="plotai-message assistant">
+                  <div className="message-avatar">🤖</div>
+                  <div className="message-content">
+                    <div className="loading-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          )}
-          <div ref={messagesEndRef} />
+          </section>
         </div>
 
         <div className="plotai-input-area">

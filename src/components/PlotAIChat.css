@@ -13,11 +13,11 @@
 
 .plotai-chat {
   background: var(--surface-card);
-  border-radius: 20px;
+  border-radius: 24px;
   width: 100%;
-  max-width: 1150px;
-  height: 95vh;
-  max-height: 920px;
+  max-width: 1350px;
+  height: 96vh;
+  max-height: 950px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -31,13 +31,33 @@
   border-bottom: 1px solid var(--surface-border);
 }
 
-.plotai-intel-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-  padding: 16px 24px 8px;
+.plotai-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.plotai-side-panel {
+  width: 380px;
+  max-width: 420px;
+  border-right: 1px solid var(--surface-border);
   background: var(--surface-card);
-  border-bottom: 1px solid var(--surface-border);
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.plotai-chat-stream {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.plotai-intel-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .intel-section {
@@ -99,7 +119,7 @@
 }
 
 .intel-section.wide {
-  grid-column: 1 / -1;
+  flex: 1;
 }
 
 .intel-toggle {
@@ -292,7 +312,7 @@
 .plotai-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -593,14 +613,27 @@
   color: #fca5a5;
 }
 
-@media (max-width: 900px) {
-  .plotai-intel-panel {
-    grid-template-columns: 1fr;
+@media (max-width: 1100px) {
+  .plotai-body {
+    flex-direction: column;
+  }
+
+  .plotai-side-panel {
+    width: 100%;
+    max-width: none;
+    border-right: none;
+    border-bottom: 1px solid var(--surface-border);
   }
 
   .plotai-chat {
     height: 100%;
     max-height: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .quick-op-grid {
+    grid-template-columns: 1fr;
   }
 }
 
