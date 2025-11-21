@@ -170,11 +170,22 @@ class ApiService {
 
   async createOrden(orden: Partial<OrdenTrabajo>): Promise<ApiResponse<OrdenTrabajo>> {
     if (supabase) {
-      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
+      // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
+      
+      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
       if (!ordenToInsert.foto_url) {
         delete ordenToInsert.foto_url
       }
+      
+      // Asegurar que dni_cuit se envíe correctamente (incluso si es null o string vacío)
+      if (ordenToInsert.dni_cuit === undefined) {
+        ordenToInsert.dni_cuit = null
+      } else if (ordenToInsert.dni_cuit === '') {
+        ordenToInsert.dni_cuit = null
+      }
+      
+      console.log('📤 Creando orden con dni_cuit:', ordenToInsert.dni_cuit, 'Payload completo:', ordenToInsert)
       
       const { data, error } = await supabase
         .from('ordenes_trabajo')
@@ -214,11 +225,23 @@ class ApiService {
 
   async updateOrden(id: number, orden: Partial<OrdenTrabajo>): Promise<ApiResponse<OrdenTrabajo>> {
     if (supabase) {
-      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
+      // Preparar el objeto para actualizar
       const ordenToUpdate = { ...orden }
+      
+      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
       if (!ordenToUpdate.foto_url) {
         delete ordenToUpdate.foto_url
       }
+      
+      // Asegurar que dni_cuit se envíe correctamente (incluso si es null o string vacío)
+      if (ordenToUpdate.dni_cuit === undefined) {
+        // Si no viene en el update, no lo modificamos (mantener valor existente)
+        delete ordenToUpdate.dni_cuit
+      } else if (ordenToUpdate.dni_cuit === '') {
+        ordenToUpdate.dni_cuit = null
+      }
+      
+      console.log('📤 Actualizando orden', id, 'con dni_cuit:', ordenToUpdate.dni_cuit, 'Payload completo:', ordenToUpdate)
       
       const { data, error } = await supabase
         .from('ordenes_trabajo')

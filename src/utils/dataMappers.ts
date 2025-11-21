@@ -110,10 +110,14 @@ const toDateOnly = (value?: string) => {
   return date.toISOString().split('T')[0]
 }
 
-export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<OrdenTrabajo> => ({
-  numero_op: task.opNumber,
-  cliente: task.title,
-  dni_cuit: task.dniCuit ?? null,
+export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<OrdenTrabajo> => {
+  // Normalizar dniCuit: si es string vacío, convertir a null
+  const dniCuitValue = task.dniCuit?.trim() || null
+  
+  return {
+    numero_op: task.opNumber,
+    cliente: task.title,
+    dni_cuit: dniCuitValue,
   descripcion: task.summary,
   estado: mapStatusToEstado(task.status),
   prioridad: mapPriorityToDb(task.priority),
@@ -124,9 +128,10 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
   complejidad: mapImpactToComplejidad(task.impact),
   sector: task.assignedSector,
   materiales: task.materials.join(', '),
-  nombre_creador: task.createdBy,
-  foto_url: task.photoUrl
-})
+    nombre_creador: task.createdBy,
+    foto_url: task.photoUrl
+  }
+}
 
 export const parseTaskIdToOrdenId = (taskId: string): number | null => {
   const direct = Number(taskId)
