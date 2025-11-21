@@ -55,6 +55,9 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
         >
+          {task.priority === 'alta' && (
+            <div className="priority-led-indicator" title="Prioridad Alta"></div>
+          )}
           <div className="task-actions">
             {onEdit && (
               <button
