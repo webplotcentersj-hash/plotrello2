@@ -79,12 +79,24 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
   // Cargar mensajes reales del canal
   useEffect(() => {
     const loadMessages = async () => {
-      if (!usuario?.id) return
+      if (!usuario?.id) {
+        console.warn('⚠️ Chat: Usuario no autenticado')
+        return
+      }
       
       setIsLoadingMessages(true)
       try {
+        console.log(`📥 Cargando mensajes del canal: ${currentChannel}`)
         const response = await apiService.getMensajesChat(currentChannel, 100)
-        if (response.success && response.data) {
+        
+        if (!response.success) {
+          console.error('❌ Error en getMensajesChat:', response.error)
+          setMessages([])
+          return
+        }
+
+        if (response.data && response.data.length > 0) {
+          console.log(`✅ Cargados ${response.data.length} mensajes`)
           const chatMessages: ChatMessage[] = response.data.map((msg) => ({
             id: msg.id.toString(),
             userId: msg.usuario_id.toString(),
@@ -96,9 +108,13 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
             type: msg.tipo || 'message'
           }))
           setMessages(chatMessages)
+        } else {
+          console.log('ℹ️ No hay mensajes en este canal')
+          setMessages([])
         }
       } catch (error) {
-        console.error('Error cargando mensajes:', error)
+        console.error('❌ Error cargando mensajes:', error)
+        setMessages([])
       } finally {
         setIsLoadingMessages(false)
       }
@@ -109,19 +125,29 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
 
   // Suscripción a Supabase Realtime para mensajes nuevos
   useEffect(() => {
-    if (!supabase || !usuario?.id) return
+    if (!supabase) {
+      console.warn('⚠️ Chat: Supabase no está disponible')
+      return
+    }
+    
+    if (!usuario?.id) {
+      console.warn('⚠️ Chat: Usuario no autenticado para Realtime')
+      return
+    }
 
     const roomId = getRoomIdForChannel(currentChannel)
+    console.log(`🔔 Suscribiéndose a Realtime para room_id: ${roomId} (canal: ${currentChannel})`)
 
     // Limpiar suscripción anterior
-    if (realtimeSubscriptionRef.current && supabase) {
+    if (realtimeSubscriptionRef.current) {
+      console.log('🧹 Limpiando suscripción anterior')
       supabase.removeChannel(realtimeSubscriptionRef.current)
+      realtimeSubscriptionRef.current = null
     }
 
     // Crear nueva suscripción
-    if (!supabase) return
     const channel = supabase
-      .channel(`chat:${roomId}`)
+      .channel(`chat:${roomId}:${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -131,11 +157,15 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
           filter: `room_id=eq.${roomId}`
         },
         (payload) => {
+          console.log('📨 Nuevo mensaje recibido vía Realtime:', payload)
           const newMsg = payload.new as any
           // Evitar duplicados: verificar si el mensaje ya existe
           setMessages((prev) => {
             const exists = prev.some((m) => m.id === newMsg.id.toString())
-            if (exists) return prev
+            if (exists) {
+              console.log('⚠️ Mensaje duplicado ignorado:', newMsg.id)
+              return prev
+            }
 
             const chatMessage: ChatMessage = {
               id: newMsg.id.toString(),
@@ -147,23 +177,37 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
               channel: currentChannel,
               type: newMsg.mensaje?.includes('zumbido') || newMsg.mensaje?.includes('Zumbido') ? 'buzz' : newMsg.mensaje?.includes('Atención') || newMsg.mensaje?.includes('ALERTA') ? 'alert' : 'message'
             }
+            console.log('✅ Mensaje agregado:', chatMessage)
             return [...prev, chatMessage]
           })
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`📡 Estado de suscripción Realtime: ${status}`)
+      })
 
     realtimeSubscriptionRef.current = channel
 
     return () => {
       if (realtimeSubscriptionRef.current && supabase) {
+        console.log('🧹 Limpiando suscripción al desmontar')
         supabase.removeChannel(realtimeSubscriptionRef.current)
+        realtimeSubscriptionRef.current = null
       }
     }
   }, [currentChannel, usuario?.id])
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !usuario?.id) return
+    if (!input.trim()) {
+      console.warn('⚠️ Intento de enviar mensaje vacío')
+      return
+    }
+    
+    if (!usuario?.id) {
+      console.error('❌ No se puede enviar mensaje: usuario no autenticado')
+      alert('Debes estar autenticado para enviar mensajes')
+      return
+    }
 
     const content = input.trim()
     setInput('')
@@ -172,6 +216,8 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
     if (inputRef.current) {
       inputRef.current.style.height = 'auto'
     }
+
+    console.log(`📤 Enviando mensaje al canal ${currentChannel}:`, content)
 
     try {
       const response = await apiService.enviarMensajeChat({
@@ -182,13 +228,34 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
       })
 
       if (!response.success) {
-        console.error('Error enviando mensaje:', response.error)
+        console.error('❌ Error enviando mensaje:', response.error)
+        alert(`Error al enviar mensaje: ${response.error || 'Error desconocido'}`)
         // Revertir el input si falla
         setInput(content)
+      } else {
+        console.log('✅ Mensaje enviado exitosamente:', response.data)
+        // El mensaje se agregará automáticamente vía Realtime
+        // Pero también lo agregamos localmente por si Realtime falla
+        if (response.data) {
+          const newMessage: ChatMessage = {
+            id: response.data.id.toString(),
+            userId: response.data.usuario_id.toString(),
+            userName: response.data.nombre_usuario || usuario.nombre,
+            userAvatar: (response.data.nombre_usuario || usuario.nombre || 'U').charAt(0).toUpperCase(),
+            content: response.data.contenido,
+            timestamp: new Date(response.data.timestamp),
+            channel: currentChannel,
+            type: response.data.tipo || 'message'
+          }
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === newMessage.id)
+            return exists ? prev : [...prev, newMessage]
+          })
+        }
       }
-      // El mensaje se agregará automáticamente vía Realtime
     } catch (error) {
-      console.error('Error enviando mensaje:', error)
+      console.error('❌ Excepción al enviar mensaje:', error)
+      alert(`Error al enviar mensaje: ${error instanceof Error ? error.message : 'Error desconocido'}`)
       setInput(content)
     }
   }
@@ -395,6 +462,18 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
         </div>
 
         <div className="messages-container">
+          {!usuario?.id && (
+            <div style={{ 
+              padding: '12px', 
+              background: '#ff4d4f', 
+              color: 'white', 
+              textAlign: 'center',
+              margin: '8px',
+              borderRadius: '8px'
+            }}>
+              ⚠️ Debes estar autenticado para usar el chat
+            </div>
+          )}
           <div className="messages-list">
             {isLoadingMessages ? (
               <div className="empty-state">
@@ -404,6 +483,11 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
               <div className="empty-state">
                 <p>No hay mensajes en este canal todavía.</p>
                 <p className="empty-hint">Sé el primero en escribir algo 👋</p>
+                {usuario?.id && (
+                  <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '8px' }}>
+                    Usuario: {usuario.nombre} (ID: {usuario.id})
+                  </p>
+                )}
               </div>
             ) : (
               channelMessages.map((message, index) => {
