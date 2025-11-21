@@ -69,6 +69,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
   const [quickOpForm, setQuickOpForm] = useState<{
     opNumber: string
     cliente: string
+    dniCuit: string
     descripcion: string
     priority: Priority
     dueDate: string
@@ -78,6 +79,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
   }>({
     opNumber: '',
     cliente: '',
+    dniCuit: '',
     descripcion: '',
     priority: 'media',
     dueDate: '',
@@ -205,6 +207,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
     const newTask: Omit<Task, 'id'> = {
       opNumber: quickOpForm.opNumber.trim() || `OP-${Date.now().toString().slice(-5)}`,
       title: quickOpForm.cliente.trim(),
+      dniCuit: quickOpForm.dniCuit.trim() || undefined,
       summary: quickOpForm.descripcion.trim(),
       status: quickOpForm.status,
       priority: quickOpForm.priority,
@@ -234,6 +237,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
         ...prev,
         opNumber: '',
         cliente: '',
+        dniCuit: '',
         descripcion: '',
         dueDate: '',
         priority: 'media',
@@ -475,6 +479,15 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
                           value={quickOpForm.cliente}
                           onChange={(e) => handleQuickOpChange('cliente', e.target.value)}
                           required
+                        />
+                      </label>
+                      <label>
+                        DNI / CUIT
+                        <input
+                          type="text"
+                          value={quickOpForm.dniCuit}
+                          onChange={(e) => handleQuickOpChange('dniCuit', e.target.value)}
+                          placeholder="Ej: 12345678 o 20-12345678-9"
                         />
                       </label>
                       <label>

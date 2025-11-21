@@ -146,6 +146,26 @@
   font-size: 0.8rem;
 }
 
+.task-dni-cuit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.dni-cuit-label {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.dni-cuit-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Courier New', monospace;
+}
+
 .task-card h4 {
   margin: 4px 0 0 0;
   font-size: 1.25rem;

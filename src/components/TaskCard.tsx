@@ -100,6 +100,12 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
               )}
             </div>
             <h4>{task.title}</h4>
+            {task.dniCuit && (
+              <div className="task-dni-cuit">
+                <span className="dni-cuit-label">DNI/CUIT:</span>
+                <span className="dni-cuit-value">{task.dniCuit}</span>
+              </div>
+            )}
             {task.workingUser && (
               <div className="working-user-indicator">
                 <span className="working-user-label">Trabajando:</span>

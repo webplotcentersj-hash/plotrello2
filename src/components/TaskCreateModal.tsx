@@ -32,6 +32,7 @@ const TaskCreateModal = ({
 }: TaskCreateModalProps) => {
   const [opNumber, setOpNumber] = useState('')
   const [cliente, setCliente] = useState('')
+  const [dniCuit, setDniCuit] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [horaEstimada, setHoraEstimada] = useState('')
   const [selectedSector, setSelectedSector] = useState<string>('')
@@ -83,6 +84,7 @@ const TaskCreateModal = ({
     const newTask: Omit<Task, 'id'> = {
       opNumber,
       title: cliente,
+      dniCuit: dniCuit.trim() || undefined,
       summary: descripcion || 'Sin descripción.',
       status: 'diseno-grafico' as TaskStatus,
       priority: (prioridad.toLowerCase() === 'normal' ? 'media' : prioridad.toLowerCase()) as any,
@@ -239,6 +241,16 @@ const TaskCreateModal = ({
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
                 placeholder=""
+              />
+            </div>
+
+            <div className="form-group">
+              <label>DNI / CUIT</label>
+              <input
+                type="text"
+                value={dniCuit}
+                onChange={(e) => setDniCuit(e.target.value)}
+                placeholder="Ej: 12345678 o 20-12345678-9"
               />
             </div>
           </div>

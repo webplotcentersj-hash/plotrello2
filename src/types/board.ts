@@ -23,6 +23,7 @@ export interface Task {
   id: string
   opNumber: string
   title: string
+  dniCuit?: string
   summary: string
   status: TaskStatus
   priority: Priority

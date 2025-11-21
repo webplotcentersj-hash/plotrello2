@@ -2,6 +2,7 @@ export interface OrdenTrabajo {
   id: number
   numero_op: string
   cliente: string
+  dni_cuit?: string | null
   descripcion?: string | null
   estado: string
   prioridad: string

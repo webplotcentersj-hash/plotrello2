@@ -72,6 +72,7 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => ({
   id: orden.id?.toString() ?? crypto.randomUUID(),
   opNumber: orden.numero_op,
   title: orden.cliente,
+  dniCuit: orden.dni_cuit ?? undefined,
   summary: orden.descripcion ?? 'Sin descripción',
   status: mapEstadoToStatus(orden.estado),
   priority: mapPriorityFromDb(orden.prioridad),
@@ -112,6 +113,7 @@ const toDateOnly = (value?: string) => {
 export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<OrdenTrabajo> => ({
   numero_op: task.opNumber,
   cliente: task.title,
+  dni_cuit: task.dniCuit ?? null,
   descripcion: task.summary,
   estado: mapStatusToEstado(task.status),
   prioridad: mapPriorityToDb(task.priority),

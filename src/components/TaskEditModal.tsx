@@ -331,6 +331,16 @@ const TaskEditModal = ({
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               />
             </div>
+
+            <div className="form-group">
+              <label>DNI / CUIT</label>
+              <input
+                type="text"
+                value={formData.dniCuit || ''}
+                onChange={(e) => setFormData({ ...formData, dniCuit: e.target.value })}
+                placeholder="Ej: 12345678 o 20-12345678-9"
+              />
+            </div>
           </div>
 
           <div className="form-row">
