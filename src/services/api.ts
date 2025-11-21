@@ -44,15 +44,29 @@ const fallbackMateriales: MaterialRecord[] = []
 
 const fallbackMensajes: ChatMessageUI[] = []
 
+// Mapeo de canales a room_id - cada canal tiene su propio room
 const chatChannelToRoom: Record<string, number> = {
   general: 1,
-  'taller-grafico': 2,
-  mostrador: 3
+  produccion: 2,
+  diseno: 3,
+  imprenta: 4,
+  instalaciones: 5,
+  random: 6,
+  'taller-grafico': 7,
+  mostrador: 8
 }
 
-const roomToChatChannel = Object.fromEntries(
-  Object.entries(chatChannelToRoom).map(([key, value]) => [value, key])
-) as Record<number, string>
+// Mapeo inverso: room_id -> canal
+const roomToChatChannel: Record<number, string> = {
+  1: 'general',
+  2: 'produccion',
+  3: 'diseno',
+  4: 'imprenta',
+  5: 'instalaciones',
+  6: 'random',
+  7: 'taller-grafico',
+  8: 'mostrador'
+}
 
 class ApiService {
   private legacyRequest<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
@@ -747,8 +761,13 @@ class ApiService {
       if (!existingRoom) {
         const roomNames: Record<number, string> = {
           1: 'General',
-          2: 'Taller Gráfico',
-          3: 'Mostrador'
+          2: 'Producción',
+          3: 'Diseño',
+          4: 'Imprenta',
+          5: 'Instalaciones',
+          6: 'Random',
+          7: 'Taller Gráfico',
+          8: 'Mostrador'
         }
 
         const { error: insertError } = await supabase

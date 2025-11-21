@@ -32,15 +32,16 @@ const CHANNELS: Channel[] = [
   { id: 'random', name: '# random', description: 'Conversaciones casuales' }
 ]
 
+// Mapeo de canales a room_id - cada canal tiene su propio room
 const chatChannelToRoom: Record<string, number> = {
   general: 1,
-  'taller-grafico': 2,
-  mostrador: 3,
-  produccion: 1,
-  diseno: 2,
-  imprenta: 3,
-  instalaciones: 1,
-  random: 1
+  produccion: 2,
+  diseno: 3,
+  imprenta: 4,
+  instalaciones: 5,
+  random: 6,
+  'taller-grafico': 7,
+  mostrador: 8
 }
 
 // Mapeo de canales a room_id (usando los mismos IDs que la API)
@@ -202,7 +203,8 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
   }, [currentChannel, usuario?.id])
 
   const handleSendMessage = async () => {
-    if (!input.trim()) {
+    // Permitir enviar si hay texto O archivos
+    if (!input.trim() && attachedFiles.length === 0) {
       console.warn('⚠️ Intento de enviar mensaje vacío')
       return
     }
@@ -214,19 +216,38 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
     }
 
     const content = input.trim()
+    let finalContent = content
+
+    // Si hay archivos, agregar información sobre ellos al mensaje
+    if (attachedFiles.length > 0) {
+      const fileInfo = attachedFiles.map((f) => `📎 ${f.name} (${(f.size / 1024).toFixed(1)} KB)`).join('\n')
+      finalContent = content ? `${content}\n\n${fileInfo}` : fileInfo
+    }
+
+    // Guardar valores antes de limpiar (por si falla)
+    const savedContent = content
+    const savedFiles = [...attachedFiles]
+
     setInput('')
+    setAttachedFiles([])
+    setShowEmojiPicker(false)
     
     // Auto-resize textarea
     if (inputRef.current) {
       inputRef.current.style.height = 'auto'
     }
 
-    console.log(`📤 Enviando mensaje al canal ${currentChannel}:`, content)
+    console.log(`📤 Enviando mensaje al canal ${currentChannel}:`, finalContent)
 
     try {
+      // Si hay archivos, subirlos primero
+      if (savedFiles.length > 0) {
+        console.log('📎 Archivos adjuntos:', savedFiles.map(f => f.name))
+      }
+
       const response = await apiService.enviarMensajeChat({
         canal: currentChannel,
-        contenido: content,
+        contenido: finalContent,
         usuario_id: usuario.id,
         tipo: 'message'
       })
@@ -235,7 +256,8 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
         console.error('❌ Error enviando mensaje:', response.error)
         alert(`Error al enviar mensaje: ${response.error || 'Error desconocido'}`)
         // Revertir el input si falla
-        setInput(content)
+        setInput(savedContent)
+        setAttachedFiles(savedFiles)
       } else {
         console.log('✅ Mensaje enviado exitosamente:', response.data)
         // El mensaje se agregará automáticamente vía Realtime
@@ -260,7 +282,8 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
     } catch (error) {
       console.error('❌ Excepción al enviar mensaje:', error)
       alert(`Error al enviar mensaje: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-      setInput(content)
+      setInput(savedContent)
+      setAttachedFiles(savedFiles)
     }
   }
 
