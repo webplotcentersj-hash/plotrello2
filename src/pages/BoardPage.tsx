@@ -405,6 +405,7 @@ const BoardPage = ({
           tasks={tasks}
           teamMembers={teamMembers}
           activity={activity}
+          onCreateTask={handleCreateTask}
           onClose={() => setIsChatAIOpen(false)}
         />
       )}

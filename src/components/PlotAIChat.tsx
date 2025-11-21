@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import type { Task, TeamMember, ActivityEvent } from '../types/board'
+import type { Task, TeamMember, ActivityEvent, TaskStatus, Priority } from '../types/board'
 import { generateContent, getSystemContext } from '../services/plotAIService'
 import { buildAgenticContext } from '../utils/agentInsights'
+import { BOARD_COLUMNS } from '../data/mockData'
 import './PlotAIChat.css'
 
 type PlotAIChatProps = {
@@ -9,7 +10,30 @@ type PlotAIChatProps = {
   activity: ActivityEvent[]
   teamMembers: TeamMember[]
   onClose: () => void
+  onCreateTask?: (newTask: Omit<Task, 'id'>) => Promise<void>
 }
+
+type SpeechRecognitionResultEventLike = {
+  results: ArrayLike<{
+    0: {
+      transcript: string
+    }
+  }>
+}
+
+type SpeechRecognitionInstance = {
+  start: () => void
+  stop: () => void
+  abort?: () => void
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null
+  onerror: ((event: unknown) => void) | null
+  onend: (() => void) | null
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
 
 type Message = {
   id: string
@@ -19,7 +43,7 @@ type Message = {
   attachments?: Array<{ name: string; type: string; content: string }>
 }
 
-const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) => {
+const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: PlotAIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -33,11 +57,198 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const agenticContext = useMemo(() => buildAgenticContext(tasks, activity, teamMembers), [tasks, activity, teamMembers])
+  const [isMicSupported, setIsMicSupported] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [micError, setMicError] = useState<string | null>(null)
+  const [isCreateOpOpen, setIsCreateOpOpen] = useState(false)
+  const [isCreatingOp, setIsCreatingOp] = useState(false)
+  const [createOpFeedback, setCreateOpFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [currentUserName, setCurrentUserName] = useState('PlotAI')
+  const [quickOpForm, setQuickOpForm] = useState<{
+    opNumber: string
+    cliente: string
+    descripcion: string
+    priority: Priority
+    dueDate: string
+    status: TaskStatus
+    ownerId: string
+    impact: Task['impact']
+  }>({
+    opNumber: '',
+    cliente: '',
+    descripcion: '',
+    priority: 'media',
+    dueDate: '',
+    status: 'diseno-grafico',
+    ownerId: teamMembers[0]?.id ?? '',
+    impact: 'media'
+  })
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: SpeechRecognitionConstructor
+      webkitSpeechRecognition?: SpeechRecognitionConstructor
+    }
+    const SpeechRecognitionClass = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition
+
+    if (SpeechRecognitionClass) {
+      try {
+        const recognition = new SpeechRecognitionClass()
+        recognition.lang = 'es-AR'
+        recognition.continuous = false
+        recognition.interimResults = false
+        recognition.onresult = (event) => {
+          const transcript = Array.from(event.results)
+            .map((result) => result[0]?.transcript ?? '')
+            .join(' ')
+          setInput((prev) => (prev ? `${prev.trim()} ${transcript}` : transcript))
+        }
+        recognition.onerror = () => {
+          setIsRecording(false)
+          setMicError('No se pudo transcribir el audio. Reintenta o verifica permisos.')
+        }
+        recognition.onend = () => {
+          setIsRecording(false)
+        }
+        recognitionRef.current = recognition
+        setIsMicSupported(true)
+      } catch (error) {
+        console.warn('SpeechRecognition no disponible:', error)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const storedUser = localStorage.getItem('usuario')
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser)
+        if (parsed?.nombre) {
+          setCurrentUserName(parsed.nombre)
+        }
+      }
+    } catch (error) {
+      console.warn('No se pudo obtener el usuario actual', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!teamMembers.length) return
+    setQuickOpForm((prev) => ({
+      ...prev,
+      ownerId: prev.ownerId || teamMembers[0].id
+    }))
+  }, [teamMembers])
+
+  const toggleRecording = () => {
+    const recognition = recognitionRef.current
+    if (!recognition) {
+      setMicError('Este navegador no soporta dictado por voz.')
+      return
+    }
+    if (isRecording) {
+      recognition.stop()
+      setIsRecording(false)
+    } else {
+      setMicError(null)
+      recognition.start()
+      setIsRecording(true)
+    }
+  }
+
+  const toggleCreateOpPanel = () => {
+    setIsCreateOpOpen((prev) => !prev)
+    setCreateOpFeedback(null)
+  }
+
+  const handleQuickOpChange = (field: keyof typeof quickOpForm, value: string) => {
+    setQuickOpForm((prev) => ({
+      ...prev,
+      [field]:
+        field === 'priority'
+          ? (value as Priority)
+          : field === 'status'
+          ? (value as TaskStatus)
+          : field === 'impact'
+          ? (value as Task['impact'])
+          : value
+    }))
+  }
+
+  const handleQuickOpSubmit = async (event?: React.FormEvent) => {
+    event?.preventDefault()
+    if (!onCreateTask) {
+      setCreateOpFeedback({
+        type: 'error',
+        message: 'La creación de OP no está disponible en esta vista.'
+      })
+      return
+    }
+
+    if (!quickOpForm.cliente.trim() || !quickOpForm.descripcion.trim()) {
+      setCreateOpFeedback({
+        type: 'error',
+        message: 'Completa al menos Cliente y Descripción.'
+      })
+      return
+    }
+
+    const selectedColumn = BOARD_COLUMNS.find((col) => col.id === quickOpForm.status)
+    const newTask: Omit<Task, 'id'> = {
+      opNumber: quickOpForm.opNumber.trim() || `OP-${Date.now().toString().slice(-5)}`,
+      title: quickOpForm.cliente.trim(),
+      summary: quickOpForm.descripcion.trim(),
+      status: quickOpForm.status,
+      priority: quickOpForm.priority,
+      ownerId: quickOpForm.ownerId || teamMembers[0]?.id || '',
+      createdBy: currentUserName,
+      tags: [],
+      materials: [],
+      assignedSector: selectedColumn?.label ?? 'Sin sector',
+      photoUrl: '',
+      storyPoints: 0,
+      progress: 0,
+      createdAt: new Date().toISOString(),
+      dueDate: quickOpForm.dueDate ? new Date(quickOpForm.dueDate).toISOString() : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      impact: quickOpForm.impact
+    }
+
+    try {
+      setIsCreatingOp(true)
+      setCreateOpFeedback(null)
+      await onCreateTask(newTask)
+      setCreateOpFeedback({
+        type: 'success',
+        message: `OP ${newTask.opNumber} creada correctamente.`
+      })
+      setQuickOpForm((prev) => ({
+        ...prev,
+        opNumber: '',
+        cliente: '',
+        descripcion: '',
+        dueDate: '',
+        priority: 'media',
+        impact: 'media'
+      }))
+    } catch (error) {
+      setCreateOpFeedback({
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'No se pudo crear la OP. Revisa tu conexión e intenta nuevamente.'
+      })
+    } finally {
+      setIsCreatingOp(false)
+    }
+  }
 
   const analyzeFile = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -234,6 +445,119 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
               ))}
             </div>
           </div>
+          <div className="intel-section wide">
+            <div className="intel-header">
+              <span className="intel-label creation">Crear OP desde el chat</span>
+              <button className="intel-toggle" onClick={toggleCreateOpPanel}>
+                {isCreateOpOpen ? 'Cerrar' : 'Abrir'}
+              </button>
+            </div>
+            {isCreateOpOpen ? (
+              <form className="quick-op-form" onSubmit={handleQuickOpSubmit}>
+                <div className="quick-op-grid">
+                  <label>
+                    N° OP (opcional)
+                    <input
+                      type="text"
+                      value={quickOpForm.opNumber}
+                      onChange={(e) => handleQuickOpChange('opNumber', e.target.value)}
+                      placeholder="Ej: OP-1240"
+                    />
+                  </label>
+                  <label>
+                    Cliente / Proyecto *
+                    <input
+                      type="text"
+                      value={quickOpForm.cliente}
+                      onChange={(e) => handleQuickOpChange('cliente', e.target.value)}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Responsable
+                    <select
+                      value={quickOpForm.ownerId}
+                      onChange={(e) => handleQuickOpChange('ownerId', e.target.value)}
+                    >
+                      {teamMembers.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Estado inicial
+                    <select
+                      value={quickOpForm.status}
+                      onChange={(e) => handleQuickOpChange('status', e.target.value)}
+                    >
+                      {BOARD_COLUMNS.map((column) => (
+                        <option key={column.id} value={column.id}>
+                          {column.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Prioridad
+                    <select
+                      value={quickOpForm.priority}
+                      onChange={(e) => handleQuickOpChange('priority', e.target.value)}
+                    >
+                      <option value="alta">Alta</option>
+                      <option value="media">Media</option>
+                      <option value="baja">Baja</option>
+                    </select>
+                  </label>
+                  <label>
+                    Impacto
+                    <select
+                      value={quickOpForm.impact}
+                      onChange={(e) => handleQuickOpChange('impact', e.target.value)}
+                    >
+                      <option value="alta">Alta</option>
+                      <option value="media">Media</option>
+                      <option value="low">Baja</option>
+                    </select>
+                  </label>
+                  <label>
+                    Fecha compromiso
+                    <input
+                      type="date"
+                      value={quickOpForm.dueDate}
+                      onChange={(e) => handleQuickOpChange('dueDate', e.target.value)}
+                    />
+                  </label>
+                </div>
+                <label className="quick-op-description">
+                  Descripción *
+                  <textarea
+                    value={quickOpForm.descripcion}
+                    onChange={(e) => handleQuickOpChange('descripcion', e.target.value)}
+                    placeholder="Detalles de la orden, materiales, alcance..."
+                    rows={3}
+                    required
+                  />
+                </label>
+                <div className="quick-op-actions">
+                  <button type="button" className="ghost" onClick={toggleCreateOpPanel}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="primary" disabled={isCreatingOp}>
+                    {isCreatingOp ? 'Creando...' : 'Crear OP'}
+                  </button>
+                </div>
+                {createOpFeedback && (
+                  <div className={`quick-op-feedback ${createOpFeedback.type}`}>
+                    {createOpFeedback.message}
+                  </div>
+                )}
+              </form>
+            ) : (
+              <p className="intel-hint">Generá una orden de producción sin salir del chat.</p>
+            )}
+          </div>
         </div>
 
         <div className="plotai-messages">
@@ -308,9 +632,18 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Escribe tu mensaje... (Enter para enviar, Shift+Enter para nueva línea)"
-              rows={1}
+              rows={2}
               className="plotai-textarea"
             />
+            <button
+              type="button"
+              className={`mic-button ${isRecording ? 'recording' : ''}`}
+              onClick={toggleRecording}
+              disabled={!isMicSupported || isLoading}
+              title={isMicSupported ? 'Dictar con micrófono' : 'Dictado no disponible'}
+            >
+              {isRecording ? '⏺' : '🎙️'}
+            </button>
             <button
               className="send-button"
               onClick={() => handleSendMessage()}
@@ -319,6 +652,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose }: PlotAIChatProps) 
               {isLoading ? '⏳' : '➤'}
             </button>
           </div>
+          {micError && <div className="mic-error">{micError}</div>}
         </div>
       </div>
     </div>
