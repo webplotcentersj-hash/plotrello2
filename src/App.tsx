@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import BoardPage from './pages/BoardPage'
 import StatisticsPage from './pages/StatisticsPage'
 import ChatPage from './pages/ChatPage'
+import ClienteConsultaPage from './pages/ClienteConsultaPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
 import type { ActivityEvent, Task, TeamMember } from './types/board'
@@ -358,6 +359,10 @@ function AppRoutes({
       <Route
         path="/chat"
         element={<ChatPage onBack={() => navigate('/')} teamMembers={teamMembers} />}
+      />
+      <Route
+        path="/consulta-cliente"
+        element={<ClienteConsultaPage />}
       />
     </Routes>
   )
