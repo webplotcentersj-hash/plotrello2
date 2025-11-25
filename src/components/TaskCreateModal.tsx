@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Task, TeamMember, TaskStatus } from '../types/board'
 import type { MaterialRecord, SectorRecord } from '../types/api'
 import { uploadAttachmentAndGetUrl } from '../utils/storage'
+import { useAuth } from '../hooks/useAuth'
 import './TaskEditModal.css'
 
 type TaskCreateModalProps = {
@@ -30,6 +31,7 @@ const TaskCreateModal = ({
   onClose,
   onCreate
 }: TaskCreateModalProps) => {
+  const { usuario } = useAuth()
   const [opNumber, setOpNumber] = useState('')
   const [cliente, setCliente] = useState('')
   const [dniCuit, setDniCuit] = useState('')
@@ -89,7 +91,7 @@ const TaskCreateModal = ({
       status: 'diseno-grafico' as TaskStatus,
       priority: (prioridad.toLowerCase() === 'normal' ? 'media' : prioridad.toLowerCase()) as any,
       ownerId: operario || teamMembers[0]?.id || '',
-      createdBy: 'Usuario actual',
+      createdBy: usuario?.nombre ?? 'Usuario',
       tags: [],
       materials: materials.map((m) => m.name),
       assignedSector: selectedSector,

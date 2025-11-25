@@ -38,7 +38,9 @@ const formatCompactDateTime = (value: string) =>
 
 const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  const worker = owner?.name ?? 'Sin asignar'
+  const workerName = task.workingUser || owner?.name
+  const isWorkerAssigned = Boolean(workerName)
+  const workerDisplay = workerName ?? 'Sin asignar'
   
   // Detectar si hay modificaciones (updatedAt es más reciente que createdAt)
   const hasModifications = new Date(task.updatedAt).getTime() > new Date(task.createdAt).getTime() + 1000 // +1 segundo para evitar falsos positivos
@@ -114,17 +116,10 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
                 <span className="people-label">Creó:</span>
                 <strong className="people-name">{task.createdBy}</strong>
               </div>
-              {task.workingUser ? (
-                <div className="people-chip worker-chip">
-                  <span className="people-label">Trabaja:</span>
-                  <strong className="people-name">{task.workingUser}</strong>
-                </div>
-              ) : (
-                <div className="people-chip worker-chip is-unassigned">
-                  <span className="people-label">Trabaja:</span>
-                  <strong className="people-name">Sin asignar</strong>
-                </div>
-              )}
+              <div className={clsx('people-chip', 'worker-chip', { 'is-unassigned': !isWorkerAssigned })}>
+                <span className="people-label">Trabaja:</span>
+                <strong className="people-name">{workerDisplay}</strong>
+              </div>
             </div>
           </div>
 
@@ -177,7 +172,7 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
               <div className="owner-chip">
                 <div className="owner-avatar">{owner?.avatar ?? 'TP'}</div>
                 <div>
-                  <strong>{worker}</strong>
+                  <strong>{owner?.name ?? 'Sin asignar'}</strong>
                   <small>{owner?.role ?? 'Trabajador no asignado'}</small>
                 </div>
               </div>
