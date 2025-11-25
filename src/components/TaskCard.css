@@ -148,30 +148,55 @@
   }
 }
 
-.working-user-indicator {
+.task-people {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
-  padding: 8px 12px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 8px;
-  font-size: 0.75rem;
 }
 
-.working-user-label {
-  color: rgba(16, 185, 129, 0.9);
+.people-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.creator-chip {
+  border-color: rgba(84, 181, 255, 0.35);
+  background: rgba(84, 181, 255, 0.08);
+  box-shadow: 0 0 12px rgba(84, 181, 255, 0.2);
+}
+
+.worker-chip {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.worker-chip.is-unassigned {
+  border-color: rgba(255, 207, 92, 0.35);
+  background: rgba(255, 207, 92, 0.08);
+  color: rgba(255, 207, 92, 0.9);
+  box-shadow: none;
+}
+
+.people-label {
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
   font-size: 0.7rem;
 }
 
-.working-user-name {
-  color: var(--text-primary);
+.people-name {
   font-weight: 700;
-  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
 }
 
 .task-dni-cuit {

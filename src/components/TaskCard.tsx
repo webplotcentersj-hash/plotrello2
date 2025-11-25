@@ -109,12 +109,23 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
                 <span className="dni-cuit-value">{task.dniCuit}</span>
               </div>
             )}
-            {task.workingUser && (
-              <div className="working-user-indicator">
-                <span className="working-user-label">Trabajando:</span>
-                <strong className="working-user-name">{task.workingUser}</strong>
+            <div className="task-people">
+              <div className="people-chip creator-chip">
+                <span className="people-label">Creó:</span>
+                <strong className="people-name">{task.createdBy}</strong>
               </div>
-            )}
+              {task.workingUser ? (
+                <div className="people-chip worker-chip">
+                  <span className="people-label">Trabaja:</span>
+                  <strong className="people-name">{task.workingUser}</strong>
+                </div>
+              ) : (
+                <div className="people-chip worker-chip is-unassigned">
+                  <span className="people-label">Trabaja:</span>
+                  <strong className="people-name">Sin asignar</strong>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="task-body">
@@ -171,9 +182,6 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
                 </div>
               </div>
               <div className="footer-right">
-                <div className="created-by-small">
-                  <span>Creado por: <strong>{task.createdBy}</strong></span>
-                </div>
                 <div className="due-date">
                   <span>Último movimiento</span>
                   <strong>{formatCompactDateTime(task.updatedAt)}</strong>
