@@ -3,6 +3,7 @@ import type { Task, TeamMember, ActivityEvent, TaskStatus, Priority } from '../t
 import { generateContent, getSystemContext } from '../services/plotAIService'
 import { buildAgenticContext } from '../utils/agentInsights'
 import { BOARD_COLUMNS } from '../data/mockData'
+import { useAuth } from '../hooks/useAuth'
 import './PlotAIChat.css'
 
 type PlotAIChatProps = {
@@ -43,7 +44,16 @@ type Message = {
   attachments?: Array<{ name: string; type: string; content: string }>
 }
 
+const stripEmailDomain = (value?: string | null) => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const atIndex = trimmed.indexOf('@')
+  return atIndex > 0 ? trimmed.slice(0, atIndex) : trimmed
+}
+
 const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: PlotAIChatProps) => {
+  const { usuario } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -65,7 +75,6 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
   const [isCreateOpOpen, setIsCreateOpOpen] = useState(false)
   const [isCreatingOp, setIsCreatingOp] = useState(false)
   const [createOpFeedback, setCreateOpFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
-  const [currentUserName, setCurrentUserName] = useState('PlotAI')
   const [quickOpForm, setQuickOpForm] = useState<{
     opNumber: string
     cliente: string
@@ -127,20 +136,6 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
     }
   }, [])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const storedUser = localStorage.getItem('usuario')
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser)
-        if (parsed?.nombre) {
-          setCurrentUserName(parsed.nombre)
-        }
-      }
-    } catch (error) {
-      console.warn('No se pudo obtener el usuario actual', error)
-    }
-  }, [])
 
   useEffect(() => {
     if (!teamMembers.length) return
@@ -204,6 +199,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
     }
 
     const selectedColumn = BOARD_COLUMNS.find((col) => col.id === quickOpForm.status)
+    const creatorName = stripEmailDomain(usuario?.nombre) ?? usuario?.nombre ?? 'Usuario'
     const newTask: Omit<Task, 'id'> = {
       opNumber: quickOpForm.opNumber.trim() || `OP-${Date.now().toString().slice(-5)}`,
       title: quickOpForm.cliente.trim(),
@@ -212,7 +208,7 @@ const PlotAIChat = ({ tasks, activity, teamMembers, onClose, onCreateTask }: Plo
       status: quickOpForm.status,
       priority: quickOpForm.priority,
       ownerId: quickOpForm.ownerId || teamMembers[0]?.id || '',
-      createdBy: currentUserName,
+      createdBy: creatorName,
       tags: [],
       materials: [],
       assignedSector: selectedColumn?.label ?? 'Sin sector',

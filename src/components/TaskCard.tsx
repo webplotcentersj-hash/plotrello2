@@ -50,6 +50,7 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
     stripEmailDomain(task.workingUser) ?? stripEmailDomain(owner?.name) ?? owner?.name
   const workerDisplay = workerName ?? 'Sin asignar'
   const isWorkerAssigned = Boolean(workerName)
+  const creatorDisplay = stripEmailDomain(task.createdBy) ?? task.createdBy ?? 'Sistema'
   
   // Detectar si hay modificaciones (updatedAt es más reciente que createdAt)
   const hasModifications = new Date(task.updatedAt).getTime() > new Date(task.createdAt).getTime() + 1000 // +1 segundo para evitar falsos positivos
@@ -123,7 +124,7 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
             <div className="task-people">
               <div className="people-chip creator-chip">
                 <span className="people-label">Creó:</span>
-                <strong className="people-name">{task.createdBy}</strong>
+                <strong className="people-name">{creatorDisplay}</strong>
               </div>
               <div className={clsx('people-chip', 'worker-chip', { 'is-unassigned': !isWorkerAssigned })}>
                 <span className="people-label">Trabaja:</span>
