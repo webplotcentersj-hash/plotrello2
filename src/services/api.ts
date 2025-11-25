@@ -8,6 +8,7 @@ import type {
   UserRole
 } from '../types/api'
 import { supabase } from './supabaseClient'
+import bcrypt from 'bcryptjs'
 
 const LEGACY_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const hasLegacyBackend = Boolean(LEGACY_API_BASE_URL)
@@ -488,6 +489,35 @@ class ApiService {
         error?.message ||
         'No se pudo crear el usuario mediante Supabase. Intentando backend legacy...'
       console.warn('⚠️ Supabase RPC crear_usuario falló, intentando backend legacy.', lastError)
+
+      // Intentar fallback directo sobre la tabla usuarios usando hash local
+      try {
+        const passwordHash = await bcrypt.hash(usuario.password, 10)
+        const { data: insertData, error: insertError } = await supabase
+          .from('usuarios')
+          .insert({
+            nombre: usuario.nombre.trim(),
+            password_hash: passwordHash,
+            rol: usuario.rol
+          })
+          .select('id, nombre, rol')
+          .single()
+
+        if (!insertError && insertData) {
+          console.warn('ℹ️ Usuario creado mediante inserción directa como fallback.')
+          return { success: true, data: insertData as UsuarioRecord }
+        }
+
+        if (insertError) {
+          lastError = insertError.message || lastError
+          console.error('❌ Inserción directa falló:', insertError)
+        }
+      } catch (hashError) {
+        lastError =
+          (hashError instanceof Error ? hashError.message : null) ||
+          'No se pudo generar el hash de la contraseña'
+        console.error('❌ Error generando hash para inserción directa:', hashError)
+      }
     }
 
     if (hasLegacyBackend) {
