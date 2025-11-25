@@ -24,6 +24,14 @@ type LocalAttachment = {
 const COMPLEXITY_OPTIONS = ['Baja', 'Media', 'Alta']
 const PRIORITY_OPTIONS = ['Normal', 'Alta', 'Media', 'Baja']
 
+const stripEmailDomain = (value?: string | null) => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const atIndex = trimmed.indexOf('@')
+  return atIndex > 0 ? trimmed.slice(0, atIndex) : trimmed
+}
+
 const TaskCreateModal = ({
   teamMembers,
   sectores,
@@ -83,6 +91,8 @@ const TaskCreateModal = ({
         : new Date(`${fechaEntrega}T00:00`).toISOString()
       : new Date().toISOString()
 
+    const creatorName = stripEmailDomain(usuario?.nombre) ?? usuario?.nombre ?? 'Usuario'
+
     const newTask: Omit<Task, 'id'> = {
       opNumber,
       title: cliente,
@@ -91,7 +101,7 @@ const TaskCreateModal = ({
       status: 'diseno-grafico' as TaskStatus,
       priority: (prioridad.toLowerCase() === 'normal' ? 'media' : prioridad.toLowerCase()) as any,
       ownerId: operario || teamMembers[0]?.id || '',
-      createdBy: usuario?.nombre ?? 'Usuario',
+      createdBy: creatorName,
       tags: [],
       materials: materials.map((m) => m.name),
       assignedSector: selectedSector,

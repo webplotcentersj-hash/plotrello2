@@ -12,7 +12,7 @@ type TaskEditModalProps = {
   sectores: SectorRecord[]
   materiales: MaterialRecord[]
   activity: ActivityEvent[]
-  onClose: () => void
+  onClose: (taskId?: string) => void
   onSave: (updatedTask: Task) => void
   onDelete?: (taskId: string) => void
 }
@@ -158,7 +158,7 @@ const TaskEditModal = ({
       updatedAt: new Date().toISOString()
     } as Task
     onSave(updated)
-    onClose()
+    onClose(task.id)
   }
 
   const handleAddComment = async () => {
@@ -298,11 +298,11 @@ const TaskEditModal = ({
     .slice(0, normalizedMaterialQuery ? 15 : 10)
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => onClose(task?.id)}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
           <h2>Editando OP #{formData.opNumber || task.opNumber}</h2>
-          <button type="button" className="modal-close" onClick={onClose}>
+          <button type="button" className="modal-close" onClick={() => onClose(task?.id)}>
             ×
           </button>
         </header>
@@ -691,7 +691,7 @@ const TaskEditModal = ({
               Eliminar
             </button>
           )}
-          <button type="button" className="btn-cancel" onClick={onClose}>
+          <button type="button" className="btn-cancel" onClick={() => onClose(task?.id)}>
             Cancelar
           </button>
           <button type="button" className="btn-save" onClick={handleSave} disabled={hasPendingUploads}>

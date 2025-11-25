@@ -353,6 +353,33 @@ class ApiService {
     return this.updateOrden(id, { estado: nuevoEstado })
   }
 
+  async setOrdenWorkingUser(id: number, workingUser: string | null): Promise<ApiResponse<void>> {
+    if (supabase) {
+      const { error } = await supabase
+        .from('ordenes_trabajo')
+        .update({ usuario_trabajando_nombre: workingUser })
+        .eq('id', id)
+
+      if (error) return { success: false, error: error.message }
+      return { success: true }
+    }
+
+    if (hasLegacyBackend) {
+      return this.legacyRequest(`/ordenes.php?id=${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ usuario_trabajando_nombre: workingUser })
+      })
+    }
+
+    const index = fallbackOrdenes.findIndex((orden) => orden.id === id)
+    if (index >= 0) {
+      fallbackOrdenes[index].usuario_trabajando_nombre = workingUser ?? null
+      return { success: true }
+    }
+
+    return { success: false, error: 'Orden no encontrada' }
+  }
+
   // ========== HISTORIAL DE MOVIMIENTOS ==========
   async getHistorialMovimientos(filters?: {
     ordenId?: number

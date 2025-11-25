@@ -127,9 +127,10 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
   operario_asignado: task.ownerId,
   complejidad: mapImpactToComplejidad(task.impact),
   sector: task.assignedSector,
-  materiales: task.materials.join(', '),
+    materiales: task.materials.join(', '),
     nombre_creador: task.createdBy,
-    foto_url: task.photoUrl
+    foto_url: task.photoUrl,
+    usuario_trabajando_nombre: task.workingUser ?? null
   }
 }
 

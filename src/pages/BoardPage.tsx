@@ -62,7 +62,7 @@ const BoardPage = ({
   sectores,
   materialesCatalog
 }: BoardPageProps) => {
-  const { isAdmin } = useAuth()
+  const { usuario, isAdmin } = useAuth()
   const [ownerFilter, setOwnerFilter] = useState<string>('todos')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas')
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,6 +84,53 @@ const BoardPage = ({
     }
     return undefined
   }, [actionError, actionSuccess])
+
+  const sanitizeWorkerName = (value?: string | null) => {
+    if (!value) return undefined
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    const atIndex = trimmed.indexOf('@')
+    return atIndex > 0 ? trimmed.slice(0, atIndex) : trimmed
+  }
+
+  const resolveCurrentUserName = () => {
+    const preferred = sanitizeWorkerName(usuario?.nombre) ?? usuario?.nombre
+    if (preferred) return preferred
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('usuario')
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw)
+          if (parsed?.nombre) {
+            return sanitizeWorkerName(parsed.nombre) ?? parsed.nombre
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    return 'Operador'
+  }
+
+  const persistWorkingUser = async (taskId: string, workingUser: string | null) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId ? { ...task, workingUser: workingUser ?? undefined } : task
+      )
+    )
+
+    const ordenId = parseTaskIdToOrdenId(taskId)
+    if (!ordenId) return
+
+    try {
+      const response = await apiService.setOrdenWorkingUser(ordenId, workingUser)
+      if (!response.success) {
+        console.error('Error actualizando trabajador activo:', response.error)
+      }
+    } catch (error) {
+      console.error('Error actualizando trabajador activo:', error)
+    }
+  }
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -156,7 +203,16 @@ const BoardPage = ({
   }
 
   const handleEditTask = (task: Task) => {
-    setTaskToEdit(task)
+    const editingUserName = resolveCurrentUserName()
+    void persistWorkingUser(task.id, editingUserName)
+    setTaskToEdit({ ...task, workingUser: editingUserName })
+  }
+
+  const handleCloseEditModal = (taskId?: string) => {
+    if (taskId) {
+      void persistWorkingUser(taskId, null)
+    }
+    setTaskToEdit(null)
   }
 
   const handleSaveTask = async (updatedTask: Task) => {
@@ -189,6 +245,7 @@ const BoardPage = ({
   }
 
   const handleDeleteTask = async (taskId: string) => {
+    void persistWorkingUser(taskId, null)
     setTasks((prev) => prev.filter((task) => task.id !== taskId))
     setTaskToEdit(null)
 
@@ -378,7 +435,7 @@ const BoardPage = ({
           sectores={sectores}
           materiales={materialesCatalog}
           activity={activity}
-          onClose={() => setTaskToEdit(null)}
+          onClose={handleCloseEditModal}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
         />

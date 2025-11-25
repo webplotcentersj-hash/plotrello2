@@ -36,11 +36,20 @@ const formatCompactDateTime = (value: string) =>
     minute: '2-digit'
   }).format(new Date(value))
 
+const stripEmailDomain = (value?: string | null) => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const atIndex = trimmed.indexOf('@')
+  return atIndex > 0 ? trimmed.slice(0, atIndex) : trimmed
+}
+
 const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  const workerName = task.workingUser || owner?.name
-  const isWorkerAssigned = Boolean(workerName)
+  const workerName =
+    stripEmailDomain(task.workingUser) ?? stripEmailDomain(owner?.name) ?? owner?.name
   const workerDisplay = workerName ?? 'Sin asignar'
+  const isWorkerAssigned = Boolean(workerName)
   
   // Detectar si hay modificaciones (updatedAt es más reciente que createdAt)
   const hasModifications = new Date(task.updatedAt).getTime() > new Date(task.createdAt).getTime() + 1000 // +1 segundo para evitar falsos positivos
