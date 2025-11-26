@@ -10,9 +10,11 @@ AS $$
 DECLARE
   new_user_id integer;
   password_hash text;
+  autentificacion_exists boolean;
 BEGIN
-  -- Validar que el rol sea válido (roles operativos, no administración)
   IF p_rol NOT IN (
+    'administracion',
+    'gerencia',
     'diseno',
     'imprenta',
     'taller-grafico',
@@ -20,44 +22,78 @@ BEGIN
     'metalurgica',
     'caja',
     'mostrador',
-    'recursos-humanos',
-    'gerencia'
+    'recursos-humanos'
   ) THEN
-    RAISE EXCEPTION 'Rol no permitido. Usa uno de: Diseño, Imprenta, Taller Gráfico, Instalaciones, Metalúrgica, Caja, Mostrador, Recursos Humanos o Gerencia.';
+    RAISE EXCEPTION 'Rol no permitido. Usa uno válido de la lista.';
   END IF;
 
-  -- Validar que el nombre no esté vacío
   IF trim(p_nombre) = '' THEN
     RAISE EXCEPTION 'El nombre de usuario no puede estar vacío';
   END IF;
 
-  -- Validar que la contraseña tenga al menos 6 caracteres
   IF length(p_password) < 6 THEN
     RAISE EXCEPTION 'La contraseña debe tener al menos 6 caracteres';
   END IF;
 
-  -- Verificar que el usuario no exista
-  IF EXISTS (SELECT 1 FROM public.usuarios u WHERE lower(u.nombre) = lower(trim(p_nombre))) THEN
+  -- Verificar si el usuario ya existe en usuarios
+  IF EXISTS (
+    SELECT 1 FROM public.usuarios u
+    WHERE lower(u.nombre) = lower(trim(p_nombre))
+  ) THEN
     RAISE EXCEPTION 'El usuario "%" ya existe', trim(p_nombre);
   END IF;
 
-  -- Hashear la contraseña
+  -- Verificar si existe la tabla autentificacion
+  SELECT EXISTS (
+    SELECT FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'autentificacion'
+  ) INTO autentificacion_exists;
+
+  -- Si existe autentificacion, verificar que no exista el usuario ahí también
+  IF autentificacion_exists THEN
+    IF EXISTS (
+      SELECT 1 FROM public.autentificacion a
+      WHERE lower(a.nombre) = lower(trim(p_nombre))
+    ) THEN
+      RAISE EXCEPTION 'El usuario "%" ya existe en autentificacion', trim(p_nombre);
+    END IF;
+  END IF;
+
   password_hash := crypt(p_password, gen_salt('bf'));
 
-  -- Insertar el nuevo usuario
+  -- Insertar en usuarios
   INSERT INTO public.usuarios (nombre, password_hash, rol)
   VALUES (trim(p_nombre), password_hash, p_rol)
-  RETURNING id INTO new_user_id;
+  RETURNING usuarios.id INTO new_user_id;
 
-  -- Retornar el usuario creado (sin la contraseña)
+  -- Si existe la tabla autentificacion, sincronizar también ahí
+  IF autentificacion_exists THEN
+    BEGIN
+      -- Intentar insertar en autentificacion con la misma estructura
+      -- Asumiendo que tiene columnas similares (nombre, password_hash, rol)
+      EXECUTE format('
+        INSERT INTO public.autentificacion (nombre, password_hash, rol)
+        VALUES (%L, %L, %L)
+        ON CONFLICT (nombre) DO UPDATE
+        SET password_hash = EXCLUDED.password_hash,
+            rol = EXCLUDED.rol
+      ', trim(p_nombre), password_hash, p_rol);
+    EXCEPTION
+      WHEN OTHERS THEN
+        -- Si falla por estructura diferente, solo registrar warning pero continuar
+        RAISE WARNING 'No se pudo sincronizar con autentificacion: %', SQLERRM;
+    END;
+  END IF;
+
   RETURN QUERY
-  SELECT 
+  SELECT
     new_user_id AS id,
     trim(p_nombre) AS nombre,
     p_rol AS rol;
 END;
 $$;
 
--- Comentario sobre la función
-COMMENT ON FUNCTION public.crear_usuario IS 'Crea un nuevo usuario con hash de contraseña. Permite roles operativos (Diseño, Imprenta, Taller Gráfico, Instalaciones, Metalúrgica, Caja, Mostrador, Recursos Humanos y Gerencia). Los administradores deben crearse directamente desde la base de datos.';
+COMMENT ON FUNCTION public.crear_usuario IS
+'Crea un nuevo usuario con hash de contraseña. Permite roles operativos y administrativos.';
 
