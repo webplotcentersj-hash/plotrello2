@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import BoardPage from './pages/BoardPage'
 import StatisticsPage from './pages/StatisticsPage'
 import ChatPage from './pages/ChatPage'
@@ -272,37 +272,42 @@ function App() {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />
-  }
-
   return (
     <>
       <EnvDebug />
       <BrowserRouter>
         <Routes>
-          {/* Ruta pública para dashboard de pantallas - no requiere autenticación */}
+          {/* Rutas públicas */}
+          <Route path="/consulta-cliente" element={<ClienteConsultaPage />} />
+          <Route path="/dashboard-pantallas" element={<DashboardPantallasPage />} />
           <Route
-            path="/dashboard-pantallas"
-            element={<DashboardPantallasPage />}
+            path="/login"
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
+            }
           />
+
           {/* Rutas protegidas - requieren autenticación */}
           <Route
             path="/*"
             element={
-              <AppRoutes 
-                tasks={tasks} 
-                setTasks={setTasks} 
-                activity={activity} 
-                setActivity={setActivity}
-                onLogout={handleLogout}
-                onReloadData={loadRemoteData}
-                isSyncing={dataLoading}
-                syncError={dataError}
-                teamMembers={teamMembers}
-                sectores={sectores}
-                materiales={materiales}
-              />
+              isAuthenticated ? (
+                <AppRoutes
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  activity={activity}
+                  setActivity={setActivity}
+                  onLogout={handleLogout}
+                  onReloadData={loadRemoteData}
+                  isSyncing={dataLoading}
+                  syncError={dataError}
+                  teamMembers={teamMembers}
+                  sectores={sectores}
+                  materiales={materiales}
+                />
+              ) : (
+                <Login onLogin={handleLogin} />
+              )
             }
           />
         </Routes>
