@@ -169,6 +169,57 @@ class ApiService {
       // Capturar supabase en variable local para TypeScript
       const supabaseClient = supabase
       
+      // SOLUCIÓN DIRECTA: Si hay campos de contacto, usar función SQL que evita schema cache
+      if (orden.telefono_cliente || orden.direccion_cliente || orden.drive_link || 
+          orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link) {
+        try {
+          console.log('🔄 Usando función SQL para crear orden (evita schema cache)')
+          const { data, error } = await supabaseClient.rpc('create_orden_with_contact', {
+            p_numero_op: orden.numero_op || '',
+            p_cliente: orden.cliente || '',
+            p_descripcion: orden.descripcion || null,
+            p_estado: orden.estado || 'Pendiente',
+            p_prioridad: orden.prioridad || 'Normal',
+            p_fecha_entrega: orden.fecha_entrega || new Date().toISOString().split('T')[0],
+            p_operario_asignado: orden.operario_asignado || null,
+            p_complejidad: orden.complejidad || 'Media',
+            p_sector: orden.sector || 'Diseño Gráfico',
+            p_materiales: orden.materiales || null,
+            p_nombre_creador: orden.nombre_creador || null,
+            p_telefono_cliente: orden.telefono_cliente || null,
+            p_email_cliente: orden.email_cliente || null,
+            p_direccion_cliente: orden.direccion_cliente || null,
+            p_whatsapp_link: orden.whatsapp_link || null,
+            p_ubicacion_link: orden.ubicacion_link || null,
+            p_drive_link: orden.drive_link || null,
+            p_foto_url: orden.foto_url || null,
+            p_dni_cuit: orden.dni_cuit || null
+          })
+          
+          if (error) {
+            console.error('❌ Error en función SQL:', error)
+            // Si falla la función, continuar con el método normal
+          } else if (data && data.length > 0) {
+            console.log('✅ Orden creada usando función SQL')
+            // Obtener la orden completa después de la creación
+            const { data: fullOrden, error: fetchError } = await supabaseClient
+              .from('ordenes_trabajo')
+              .select('*')
+              .eq('id', data[0].id)
+              .single()
+            
+            if (fetchError) {
+              return { success: false, error: fetchError.message }
+            }
+            
+            return { success: true, data: fullOrden as OrdenTrabajo }
+          }
+        } catch (err) {
+          console.warn('⚠️ Error al usar función SQL, continuando con método normal:', err)
+          // Continuar con el método normal si la función no existe o falla
+        }
+      }
+      
       // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
       
