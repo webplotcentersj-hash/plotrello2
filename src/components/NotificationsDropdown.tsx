@@ -82,7 +82,7 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
 
     const channel = supabase
       .channel(`notifications:${usuario.id}`)
-      .on<Notification>(
+      .on(
         'postgres_changes',
         {
           event: 'INSERT',
@@ -90,7 +90,7 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
           table: 'user_notifications',
           filter: `user_id=eq.${usuario.id}`
         },
-        (payload: { new: Notification; old: Notification | null; eventType: string }) => {
+        (payload: any) => {
           console.log('🔔 Nueva notificación recibida:', payload)
           const newNotification = payload.new as Notification
           setNotifications((prev) => [newNotification, ...prev])
@@ -105,7 +105,7 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
           }
         }
       )
-      .on<Notification>(
+      .on(
         'postgres_changes',
         {
           event: 'UPDATE',
@@ -113,7 +113,7 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
           table: 'user_notifications',
           filter: `user_id=eq.${usuario.id}`
         },
-        (payload: { new: Notification; old: Notification | null; eventType: string }) => {
+        (payload: any) => {
           const updatedNotification = payload.new as Notification
           setNotifications((prev) =>
             prev.map((n) => (n.id === updatedNotification.id ? updatedNotification : n))
