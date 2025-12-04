@@ -235,13 +235,17 @@ class ApiService {
           'drive_link'
         ]
 
-        // Si el error es por columnas opcionales nuevas, intentar sin ellas
-        if (optionalColumns.some((col) => error.message.includes(col))) {
+        // Si el error es por columnas opcionales nuevas, intentar sin solo las que causan el error
+        const missingColumns = optionalColumns.filter((col) => error.message.includes(col))
+        
+        if (missingColumns.length > 0) {
           console.warn(
-            '⚠️ Algunas columnas opcionales (foto_url / datos de contacto) no existen aún en esta base. Ejecuta los parches SQL si quieres usarlas.'
+            `⚠️ Las siguientes columnas no existen en la base de datos: ${missingColumns.join(', ')}. Ejecuta el parche SQL: supabase/patches/2024-11-24_add_contact_fields_to_ordenes.sql`
           )
+          
+          // Solo eliminar las columnas que realmente faltan, no todas
           const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToInsert }
-          optionalColumns.forEach((col) => {
+          missingColumns.forEach((col) => {
             // @ts-expect-error index access
             delete sanitizedPayload[col]
           })
@@ -251,10 +255,29 @@ class ApiService {
             return { success: false, error: fallback.error.message }
           }
 
+          // Avisar al usuario que algunos datos no se guardaron
+          if (missingColumns.length > 0) {
+            console.warn(
+              `⚠️ La orden se creó pero los siguientes datos no se guardaron porque las columnas no existen: ${missingColumns.join(', ')}. Ejecuta el parche SQL para habilitarlos.`
+            )
+          }
+
           return { success: true, data: fallback.data as OrdenTrabajo }
         }
 
         return { success: false, error: error.message }
+      }
+      
+      // Log de éxito con datos guardados
+      if (ordenToInsert.telefono_cliente || ordenToInsert.email_cliente || ordenToInsert.direccion_cliente) {
+        console.log('✅ Orden creada con datos de contacto:', {
+          telefono: ordenToInsert.telefono_cliente || 'no',
+          email: ordenToInsert.email_cliente || 'no',
+          direccion: ordenToInsert.direccion_cliente || 'no',
+          whatsapp: ordenToInsert.whatsapp_link || 'no',
+          ubicacion: ordenToInsert.ubicacion_link || 'no',
+          drive: ordenToInsert.drive_link || 'no'
+        })
       }
 
       return { success: true, data: data as OrdenTrabajo }
@@ -321,12 +344,17 @@ class ApiService {
           'drive_link'
         ]
 
-        if (optionalColumns.some((col) => error.message.includes(col))) {
+        // Si el error es por columnas opcionales nuevas, intentar sin solo las que causan el error
+        const missingColumns = optionalColumns.filter((col) => error.message.includes(col))
+        
+        if (missingColumns.length > 0) {
           console.warn(
-            '⚠️ Algunas columnas opcionales (foto_url / datos de contacto) no existen aún en esta base. Ejecuta los parches SQL si quieres usarlas.'
+            `⚠️ Las siguientes columnas no existen en la base de datos: ${missingColumns.join(', ')}. Ejecuta el parche SQL: supabase/patches/2024-11-24_add_contact_fields_to_ordenes.sql`
           )
+          
+          // Solo eliminar las columnas que realmente faltan, no todas
           const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToUpdate }
-          optionalColumns.forEach((col) => {
+          missingColumns.forEach((col) => {
             // @ts-expect-error index access
             delete sanitizedPayload[col]
           })
@@ -336,10 +364,29 @@ class ApiService {
             return { success: false, error: fallback.error.message }
           }
 
+          // Avisar al usuario que algunos datos no se guardaron
+          if (missingColumns.length > 0) {
+            console.warn(
+              `⚠️ La orden se actualizó pero los siguientes datos no se guardaron porque las columnas no existen: ${missingColumns.join(', ')}. Ejecuta el parche SQL para habilitarlos.`
+            )
+          }
+
           return { success: true, data: fallback.data as OrdenTrabajo }
         }
 
         return { success: false, error: error.message }
+      }
+      
+      // Log de éxito con datos guardados
+      if (ordenToUpdate.telefono_cliente || ordenToUpdate.email_cliente || ordenToUpdate.direccion_cliente) {
+        console.log('✅ Orden actualizada con datos de contacto:', {
+          telefono: ordenToUpdate.telefono_cliente || 'no',
+          email: ordenToUpdate.email_cliente || 'no',
+          direccion: ordenToUpdate.direccion_cliente || 'no',
+          whatsapp: ordenToUpdate.whatsapp_link || 'no',
+          ubicacion: ordenToUpdate.ubicacion_link || 'no',
+          drive: ordenToUpdate.drive_link || 'no'
+        })
       }
 
       return { success: true, data: data as OrdenTrabajo }
