@@ -87,8 +87,24 @@ export const mapComplejidadToImpact = (
 ): Task['impact'] => COMPLEJIDAD_TO_IMPACT[complejidad?.toLowerCase() ?? 'media'] ?? 'media'
 
 export const ordenToTask = (orden: OrdenTrabajo): Task => {
-  const clientPhone = orden.telefono_cliente ?? undefined
-  const whatsappUrl = orden.whatsapp_link ?? buildWhatsappLinkFromPhone(clientPhone)
+  const clientPhone = orden.telefono_cliente?.trim() || undefined
+  const whatsappUrl = orden.whatsapp_link?.trim() || buildWhatsappLinkFromPhone(clientPhone)
+  const clientEmail = orden.email_cliente?.trim() || undefined
+  const clientAddress = orden.direccion_cliente?.trim() || undefined
+  const locationUrl = orden.ubicacion_link?.trim() || undefined
+  const driveUrl = orden.drive_link?.trim() || undefined
+
+  // Debug: log si hay datos de contacto
+  if (clientPhone || clientEmail || clientAddress || locationUrl || driveUrl) {
+    console.log(`📞 Orden ${orden.numero_op} tiene datos de contacto:`, {
+      telefono: clientPhone || 'no',
+      email: clientEmail || 'no',
+      direccion: clientAddress || 'no',
+      ubicacion: locationUrl || 'no',
+      drive: driveUrl || 'no',
+      whatsapp: whatsappUrl || 'no'
+    })
+  }
 
   return {
     id: orden.id?.toString() ?? crypto.randomUUID(),
@@ -106,7 +122,7 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => {
       ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)
       : [],
     assignedSector: orden.sector ?? 'Sin sector',
-    photoUrl: orden.foto_url ?? '',
+    photoUrl: orden.foto_url?.trim() || '',
     storyPoints: 0,
     progress: orden.estado?.toLowerCase().includes('finalizado') ? 100 : 50,
     createdAt: orden.fecha_creacion ?? new Date().toISOString(),
@@ -114,11 +130,11 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => {
     updatedAt: orden.fecha_ingreso ?? orden.fecha_creacion ?? new Date().toISOString(),
     impact: mapComplejidadToImpact(orden.complejidad),
     clientPhone,
-    clientEmail: orden.email_cliente ?? undefined,
-    clientAddress: orden.direccion_cliente ?? undefined,
+    clientEmail,
+    clientAddress,
     whatsappUrl,
-    locationUrl: orden.ubicacion_link ?? undefined,
-    driveUrl: orden.drive_link ?? undefined
+    locationUrl,
+    driveUrl
   }
 }
 

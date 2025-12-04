@@ -180,7 +180,19 @@ const TaskCreateModal = ({
         )
       } catch (error) {
         console.error('Error subiendo archivo', error)
-        setUploadError('No se pudo subir el archivo. Revisa tu conexión e intenta nuevamente.')
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+        
+        // Mensajes de error más específicos
+        let userMessage = 'No se pudo subir el archivo.'
+        if (errorMessage.includes('Bucket not found') || errorMessage.includes('not found')) {
+          userMessage = `El bucket "archivos" no existe. Créalo en Supabase → Storage → New bucket (debe ser público)`
+        } else if (errorMessage.includes('permission denied') || errorMessage.includes('row-level security')) {
+          userMessage = 'Error de permisos. El bucket debe ser público. Ve a Supabase → Storage → archivos → Policies'
+        } else {
+          userMessage = `Error: ${errorMessage}`
+        }
+        
+        setUploadError(userMessage)
         setAttachments((prev) => prev.filter((attachment) => attachment.id !== id))
         if (previewUrl.startsWith('blob:')) {
           URL.revokeObjectURL(previewUrl)

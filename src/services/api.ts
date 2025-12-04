@@ -203,8 +203,8 @@ class ApiService {
       // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
       
-      // Si foto_url no está definido o es null, no lo incluimos para evitar errores
-      if (!ordenToInsert.foto_url) {
+      // Solo eliminar foto_url si está vacío o es null (pero mantenerlo si tiene valor)
+      if (!ordenToInsert.foto_url || ordenToInsert.foto_url.trim() === '') {
         delete ordenToInsert.foto_url
       }
       
