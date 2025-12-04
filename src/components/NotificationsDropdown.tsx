@@ -80,10 +80,15 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
 
   // Suscripción a Realtime para nuevas notificaciones
   useEffect(() => {
-    if (!usuario?.id || !supabase) return
+    if (!usuario?.id || !supabase) {
+      console.warn('🔔 Notificaciones Realtime: Usuario o Supabase no disponible')
+      return
+    }
+
+    console.log('🔔 Configurando suscripción Realtime para usuario:', usuario.id)
 
     const channel = supabase
-      .channel(`notifications:${usuario.id}`)
+      .channel(`notifications:${usuario.id}:${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -93,9 +98,18 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
           filter: `user_id=eq.${usuario.id}`
         },
         (payload: any) => {
-          console.log('🔔 Nueva notificación recibida:', payload)
+          console.log('🔔 Nueva notificación recibida vía Realtime:', payload)
           const newNotification = payload.new as Notification
-          setNotifications((prev) => [newNotification, ...prev])
+          setNotifications((prev) => {
+            // Evitar duplicados
+            const exists = prev.some((n) => n.id === newNotification.id)
+            if (exists) {
+              console.log('⚠️ Notificación duplicada ignorada:', newNotification.id)
+              return prev
+            }
+            console.log('✅ Notificación agregada a la lista')
+            return [newNotification, ...prev]
+          })
           
           // Mostrar notificación del navegador si está permitido
           if ('Notification' in window && Notification.permission === 'granted') {
@@ -116,15 +130,28 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
           filter: `user_id=eq.${usuario.id}`
         },
         (payload: any) => {
+          console.log('🔔 Notificación actualizada vía Realtime:', payload)
           const updatedNotification = payload.new as Notification
           setNotifications((prev) =>
             prev.map((n) => (n.id === updatedNotification.id ? updatedNotification : n))
           )
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`🔔 Estado de suscripción Realtime: ${status}`)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Suscripción Realtime activa para notificaciones')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Error en canal Realtime de notificaciones')
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚠️ Timeout en suscripción Realtime de notificaciones')
+        } else if (status === 'CLOSED') {
+          console.warn('⚠️ Canal Realtime de notificaciones cerrado')
+        }
+      })
 
     return () => {
+      console.log('🧹 Limpiando suscripción Realtime de notificaciones')
       void channel.unsubscribe()
     }
   }, [usuario?.id])
