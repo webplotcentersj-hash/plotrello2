@@ -1,5 +1,5 @@
 import type { ActivityEvent, Priority, Task, TaskStatus } from '../types/board'
-import type { HistorialMovimiento, OrdenTrabajo } from '../types/api'
+import type { HistorialMovimiento, OrdenTrabajo, TareaRecord } from '../types/api'
 
 const STATUS_TO_ESTADO: Record<TaskStatus, string> = {
   'diseno-grafico': 'Diseño Gráfico',
@@ -206,6 +206,67 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
   }
 
   return payload
+}
+
+// Convertir sub-tarea a Task
+export const tareaToTask = (tarea: TareaRecord, orden: OrdenTrabajo): Task => {
+  // Mapear estado_kanban a TaskStatus según el sector
+  const mapSectorToStatus = (sector: string | null | undefined): TaskStatus => {
+    if (!sector) return 'diseno-grafico'
+    const sectorMap: Record<string, TaskStatus> = {
+      'Diseño Gráfico': 'diseno-grafico',
+      'Taller de Imprenta': 'taller-imprenta',
+      'Taller Gráfico': 'taller-grafico',
+      'Instalaciones': 'instalaciones',
+      'Metalúrgica': 'metalurgica',
+      'Imprenta (Área de Impresión)': 'imprenta',
+      'Mostrador': 'diseno-grafico',
+      'Caja': 'diseno-grafico'
+    }
+    return sectorMap[sector] || 'diseno-grafico'
+  }
+
+  // Mapear estado_kanban a status
+  const estadoToStatus: Record<string, TaskStatus> = {
+    'Pendiente': mapSectorToStatus(tarea.sector),
+    'En Proceso': mapSectorToStatus(tarea.sector),
+    'Finalizado': 'almacen-entrega' // Las completadas no se muestran, pero por si acaso
+  }
+
+  return {
+    id: `subtask-${tarea.id}`,
+    opNumber: orden.numero_op,
+    title: `${orden.cliente} - ${tarea.sector || 'Sector'}`,
+    dniCuit: orden.dni_cuit ?? undefined,
+    summary: tarea.descripcion_tarea,
+    status: estadoToStatus[tarea.estado_kanban] || mapSectorToStatus(tarea.sector),
+    priority: mapPriorityFromDb(orden.prioridad),
+    ownerId: orden.operario_asignado ?? 'sin-asignar',
+    createdBy: orden.nombre_creador ?? 'Sistema',
+    workingUser: undefined,
+    tags: [],
+    materials: orden.materiales
+      ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)
+      : [],
+    assignedSector: tarea.sector || orden.sector || 'Sin sector',
+    sectores: orden.sectores && orden.sectores.length > 0 ? orden.sectores : (orden.sector ? [orden.sector] : []),
+    sectorInicial: orden.sector_inicial || orden.sector || undefined,
+    esSubTarea: true,
+    idFichaPrincipal: orden.id.toString(),
+    photoUrl: orden.foto_url?.trim() || '',
+    storyPoints: 0,
+    progress: tarea.estado_kanban === 'Finalizado' ? 100 : tarea.estado_kanban === 'En Proceso' ? 50 : 0,
+    createdAt: orden.fecha_creacion ?? new Date().toISOString(),
+    dueDate: orden.fecha_entrega ?? orden.fecha_creacion ?? new Date().toISOString(),
+    updatedAt: orden.fecha_ingreso ?? orden.fecha_creacion ?? new Date().toISOString(),
+    impact: mapComplejidadToImpact(orden.complejidad),
+    clientPhone: orden.telefono_cliente?.trim() || undefined,
+    clientEmail: orden.email_cliente?.trim() || undefined,
+    clientAddress: orden.direccion_cliente?.trim() || undefined,
+    whatsappUrl: orden.whatsapp_link?.trim() || buildWhatsappLinkFromPhone(orden.telefono_cliente),
+    locationUrl: orden.ubicacion_link?.trim() || undefined,
+    driveUrl: orden.drive_link?.trim() || undefined
+  }
 }
 
 export const parseTaskIdToOrdenId = (taskId: string): number | null => {

@@ -5,6 +5,7 @@ import type {
   Notification,
   OrdenTrabajo,
   SectorRecord,
+  TareaRecord,
   UsuarioRecord,
   UserRole
 } from '../types/api'
@@ -776,6 +777,28 @@ class ApiService {
     }
 
     return this.handleFallback(fallbackSectores)
+  }
+
+  async getSubTareas(ordenId?: number): Promise<ApiResponse<TareaRecord[]>> {
+    if (supabase) {
+      let query = supabase
+        .from('tareas')
+        .select('*')
+        .eq('es_sub_tarea', true)
+        .neq('estado_kanban', 'Finalizado') // Ocultar sub-tareas completadas
+        .order('id', { ascending: true })
+
+      if (ordenId) {
+        query = query.eq('id_orden', ordenId)
+      }
+
+      const { data, error } = await query
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as TareaRecord[]) ?? [] }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
   }
 
   async getMateriales(search?: string): Promise<ApiResponse<MaterialRecord[]>> {

@@ -9,7 +9,7 @@ import DashboardPantallasPage from './pages/DashboardPantallasPage'
 import ImpresorasPage from './pages/ImpresorasPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
-import type { ActivityEvent, Task, TeamMember } from './types/board'
+import type { ActivityEvent, Task, TaskStatus, TeamMember } from './types/board'
 import type {
   HistorialMovimiento,
   MaterialRecord,
@@ -20,7 +20,7 @@ import type {
 import { useAuth } from './hooks/useAuth'
 import './app.css'
 import apiService from './services/api'
-import { historialToActivity, ordenToTask } from './utils/dataMappers'
+import { historialToActivity, ordenToTask, tareaToTask } from './utils/dataMappers'
 import { supabase } from './services/supabaseClient'
 
 const DEFAULT_SECTORES: SectorRecord[] = [
@@ -110,15 +110,64 @@ function App() {
         return
       }
 
-      const [ordenesResp, historialResp] = await Promise.all([
+      const [ordenesResp, historialResp, subTareasResp] = await Promise.all([
         apiService.getOrdenes(),
-        apiService.getHistorialMovimientos({ limit: 100 })
+        apiService.getHistorialMovimientos({ limit: 100 }),
+        apiService.getSubTareas() // Cargar todas las sub-tareas
       ])
 
       if (ordenesResp.success && ordenesResp.data) {
-        setTasks(
-          ordenesResp.data.map((orden) => ordenToTask(orden))
-        )
+        // Convertir órdenes a tasks (fichas principales)
+        const fichasPrincipales = ordenesResp.data.map((orden) => ordenToTask(orden))
+        
+        // Convertir sub-tareas a tasks
+        let subTareas: Task[] = []
+        if (subTareasResp.success && subTareasResp.data && ordenesResp.data) {
+          subTareas = subTareasResp.data
+            .map((tarea) => {
+              // Buscar la orden correspondiente
+              const orden = ordenesResp.data!.find((o) => o.id === tarea.id_orden)
+              if (!orden) return null
+              return tareaToTask(tarea, orden)
+            })
+            .filter((task): task is Task => task !== null)
+        }
+        
+        // Combinar fichas principales y sub-tareas
+        // Las fichas principales deben aparecer en su sector_inicial
+        const allTasks = [...fichasPrincipales, ...subTareas]
+        
+        // Ajustar el status de las fichas principales según su sector_inicial
+        const tasksWithCorrectStatus = allTasks.map((task) => {
+          if (task.esSubTarea) {
+            // Las sub-tareas ya tienen su status correcto según su sector
+            return task
+          } else {
+            // Las fichas principales deben aparecer en su sector_inicial
+            if (task.sectorInicial) {
+              const mapSectorToStatus = (sector: string): TaskStatus => {
+                const sectorMap: Record<string, TaskStatus> = {
+                  'Diseño Gráfico': 'diseno-grafico',
+                  'Taller de Imprenta': 'taller-imprenta',
+                  'Taller Gráfico': 'taller-grafico',
+                  'Instalaciones': 'instalaciones',
+                  'Metalúrgica': 'metalurgica',
+                  'Imprenta (Área de Impresión)': 'imprenta',
+                  'Mostrador': 'diseno-grafico',
+                  'Caja': 'diseno-grafico'
+                }
+                return sectorMap[sector] || 'diseno-grafico'
+              }
+              return {
+                ...task,
+                status: mapSectorToStatus(task.sectorInicial)
+              }
+            }
+            return task
+          }
+        })
+        
+        setTasks(tasksWithCorrectStatus)
       } else {
         setDataError(ordenesResp.error || 'No se pudieron cargar las órdenes')
       }
