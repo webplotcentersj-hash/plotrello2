@@ -111,16 +111,33 @@ class ApiService {
       // Seleccionar columnas explícitamente para evitar errores si falta foto_url
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .select('id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre, telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link')
+        .select(
+          'id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre, telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link'
+        )
         .order('fecha_creacion', { ascending: false })
 
       if (error) {
-        // Si el error es por foto_url, intentar sin esa columna
-        if (error.message.includes('foto_url')) {
-          console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
+        // Si el error es por columnas opcionales nuevas, intentar sin ellas
+        const optionalColumns = [
+          'foto_url',
+          'telefono_cliente',
+          'email_cliente',
+          'direccion_cliente',
+          'whatsapp_link',
+          'ubicacion_link',
+          'drive_link'
+        ]
+
+        if (optionalColumns.some((col) => error.message.includes(col))) {
+          console.warn(
+            '⚠️ Algunas columnas opcionales (foto_url / datos de contacto) no existen aún en esta base. Ejecuta los parches SQL correspondientes si quieres usarlas.'
+          )
+
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('ordenes_trabajo')
-            .select('id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link')
+            .select(
+              'id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, usuario_trabajando_nombre'
+            )
             .order('fecha_creacion', { ascending: false })
           
           if (fallbackError) {
@@ -128,9 +145,18 @@ class ApiService {
             return { success: false, error: fallbackError.message }
           }
           
-          // Agregar foto_url como null para cada orden
-          const dataWithFoto = (fallbackData || []).map((orden: any) => ({ ...orden, foto_url: null }))
-          return { success: true, data: (dataWithFoto as OrdenTrabajo[]) ?? [] }
+          // Agregar campos opcionales como null para cada orden
+          const dataWithOptional = (fallbackData || []).map((orden: any) => ({
+            ...orden,
+            foto_url: null,
+            telefono_cliente: null,
+            email_cliente: null,
+            direccion_cliente: null,
+            whatsapp_link: null,
+            ubicacion_link: null,
+            drive_link: null
+          }))
+          return { success: true, data: (dataWithOptional as OrdenTrabajo[]) ?? [] }
         }
         
         console.error('Supabase getOrdenes error:', error)
