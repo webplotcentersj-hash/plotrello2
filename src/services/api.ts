@@ -2,6 +2,7 @@ import { BOARD_COLUMNS } from '../data/mockData'
 import type {
   HistorialMovimiento,
   MaterialRecord,
+  Notification,
   OrdenTrabajo,
   SectorRecord,
   UsuarioRecord,
@@ -1292,6 +1293,83 @@ class ApiService {
       }
 
       return { success: true, data }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  // ============================================
+  // NOTIFICACIONES
+  // ============================================
+
+  async getUserNotifications(userId: number, limit: number = 50): Promise<ApiResponse<Notification[]>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('user_notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
+        .limit(limit)
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as Notification[]) ?? [] }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async createNotification(notification: {
+    user_id: number
+    title: string
+    description?: string
+    type?: 'info' | 'success' | 'warning' | 'error' | 'mention'
+    orden_id?: number
+  }): Promise<ApiResponse<Notification>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('user_notifications')
+        .insert({
+          user_id: notification.user_id,
+          title: notification.title,
+          description: notification.description || null,
+          type: notification.type || 'info',
+          orden_id: notification.orden_id || null,
+          is_read: false
+        })
+        .select()
+        .single()
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: data as Notification }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<ApiResponse<void>> {
+    if (supabase) {
+      const { error } = await supabase
+        .from('user_notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+
+      if (error) return { success: false, error: error.message }
+      return { success: true }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<ApiResponse<void>> {
+    if (supabase) {
+      const { error } = await supabase
+        .from('user_notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false)
+
+      if (error) return { success: false, error: error.message }
+      return { success: true }
     }
 
     return { success: false, error: 'Supabase no configurado' }

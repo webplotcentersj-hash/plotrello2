@@ -84,3 +84,14 @@ export interface ComentarioOrden {
   timestamp: string
 }
 
+export interface Notification {
+  id: number
+  user_id: number
+  title: string
+  description: string | null
+  type: 'info' | 'success' | 'warning' | 'error' | 'mention'
+  orden_id: number | null
+  is_read: boolean
+  timestamp: string
+}
+

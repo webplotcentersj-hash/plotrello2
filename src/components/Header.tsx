@@ -1,4 +1,5 @@
 import type { ActivityEvent, TeamMember } from '../types/board'
+import NotificationsDropdown from './NotificationsDropdown'
 import './Header.css'
 
 type HeaderProps = {
@@ -40,6 +41,7 @@ const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavi
           <h1>Tablero Plot</h1>
         </div>
         <div className="header-actions">
+          <NotificationsDropdown />
           {onAddNewOrder && (
             <button className="brand-button" onClick={onAddNewOrder}>
               + Agregar Nueva Orden
