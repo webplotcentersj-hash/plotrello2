@@ -138,6 +138,7 @@ DO $$
 DECLARE
   rls_enabled boolean;
   policy_count integer;
+  policy_rec RECORD;
 BEGIN
   -- Verificar si RLS está habilitado
   SELECT rowsecurity INTO rls_enabled
@@ -157,18 +158,14 @@ BEGIN
     RAISE NOTICE '📊 Políticas RLS encontradas: %', policy_count;
     
     -- Listar políticas
-    DECLARE
-      policy_rec RECORD;
-    BEGIN
-      FOR policy_rec IN
-        SELECT policyname, cmd
-        FROM pg_policies
-        WHERE schemaname = 'public'
-          AND tablename = 'ordenes_trabajo'
-      LOOP
-        RAISE NOTICE '  - Política: % (comando: %)', policy_rec.policyname, policy_rec.cmd;
-      END LOOP;
-    END;
+    FOR policy_rec IN
+      SELECT policyname, cmd
+      FROM pg_policies
+      WHERE schemaname = 'public'
+        AND tablename = 'ordenes_trabajo'
+    LOOP
+      RAISE NOTICE '  - Política: % (comando: %)', policy_rec.policyname, policy_rec.cmd;
+    END LOOP;
   ELSE
     RAISE NOTICE '✅ RLS NO está habilitado - no hay restricciones de políticas';
   END IF;
