@@ -179,6 +179,13 @@ class ApiService {
       if (hasContactFields || hasMultipleSectors) {
         try {
           console.log('🔄 Usando función SQL para crear orden (evita schema cache)')
+          console.log('📋 Datos a enviar:', {
+            p_sectores: orden.sectores,
+            p_sector_inicial: orden.sector_inicial,
+            p_sector: orden.sector_inicial || orden.sector,
+            hasMultipleSectors,
+            hasContactFields
+          })
           const { data, error } = await supabaseClient.rpc('create_orden_with_contact', {
             p_numero_op: orden.numero_op || '',
             p_cliente: orden.cliente || '',

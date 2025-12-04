@@ -262,7 +262,16 @@ const BoardPage = ({
 
   const handleCreateTask = async (newTaskData: Omit<Task, 'id'>) => {
     try {
-      const response = await apiService.createOrden(taskToOrdenPayload(newTaskData))
+      console.log('📝 Creando nueva ficha:', {
+        opNumber: newTaskData.opNumber,
+        sectores: newTaskData.sectores,
+        sectorInicial: newTaskData.sectorInicial,
+        assignedSector: newTaskData.assignedSector
+      })
+      const payload = taskToOrdenPayload(newTaskData)
+      console.log('📤 Payload a enviar:', payload)
+      const response = await apiService.createOrden(payload)
+      console.log('📥 Respuesta de createOrden:', response)
       if (response.success && response.data) {
         const createdTask = ordenToTask(response.data)
         setTasks((prev) => [createdTask, ...prev])

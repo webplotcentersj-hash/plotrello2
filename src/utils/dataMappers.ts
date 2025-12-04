@@ -193,17 +193,19 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
     drive_link: task.driveUrl?.trim() || null
   }
 
-  // Debug: log datos de contacto
-  if (payload.telefono_cliente || payload.ubicacion_link || payload.direccion_cliente) {
-    console.log('📞 taskToOrdenPayload - Datos de contacto en payload:', {
-      telefono: payload.telefono_cliente || 'null',
-      ubicacion: payload.ubicacion_link || 'null',
-      direccion: payload.direccion_cliente || 'null',
-      email: payload.email_cliente || 'null',
-      whatsapp: payload.whatsapp_link || 'null',
-      drive: payload.drive_link || 'null'
-    })
-  }
+  // Debug: log datos de sectores y contacto
+  console.log('📋 taskToOrdenPayload - Datos completos:', {
+    numero_op: payload.numero_op,
+    sectores: payload.sectores,
+    sector_inicial: payload.sector_inicial,
+    sector: payload.sector,
+    telefono: payload.telefono_cliente || 'null',
+    ubicacion: payload.ubicacion_link || 'null',
+    direccion: payload.direccion_cliente || 'null',
+    email: payload.email_cliente || 'null',
+    whatsapp: payload.whatsapp_link || 'null',
+    drive: payload.drive_link || 'null'
+  })
 
   return payload
 }
