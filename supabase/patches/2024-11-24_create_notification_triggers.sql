@@ -12,11 +12,24 @@ SECURITY DEFINER
 AS $$
 DECLARE
   user_id_result integer;
+  nombre_limpio text;
 BEGIN
+  -- Limpiar el nombre (quitar espacios, convertir a minúsculas para comparación)
+  nombre_limpio := trim(lower(nombre_usuario));
+  
+  -- Buscar por coincidencia exacta primero
   SELECT id INTO user_id_result
   FROM public.usuarios
-  WHERE nombre = nombre_usuario
+  WHERE lower(trim(nombre)) = nombre_limpio
   LIMIT 1;
+  
+  -- Si no se encuentra, intentar buscar por coincidencia parcial (sin dominio de email)
+  IF user_id_result IS NULL AND nombre_limpio LIKE '%@%' THEN
+    SELECT id INTO user_id_result
+    FROM public.usuarios
+    WHERE lower(trim(nombre)) LIKE '%' || split_part(nombre_limpio, '@', 1) || '%'
+    LIMIT 1;
+  END IF;
   
   RETURN user_id_result;
 END;
@@ -38,7 +51,7 @@ BEGIN
   -- Solo notificar si el estado cambió
   IF OLD.estado IS DISTINCT FROM NEW.estado THEN
     -- Notificar al operario asignado si existe
-    IF NEW.operario_asignado IS NOT NULL THEN
+    IF NEW.operario_asignado IS NOT NULL AND trim(NEW.operario_asignado) != '' THEN
       user_id_destino := public.get_user_id_from_nombre(NEW.operario_asignado);
       
       IF user_id_destino IS NOT NULL THEN
@@ -46,16 +59,25 @@ BEGIN
         notification_desc := format('La orden #%s (%s) cambió de "%s" a "%s"', 
           NEW.numero_op, NEW.cliente, OLD.estado, NEW.estado);
         
-        INSERT INTO public.user_notifications (
-          user_id, title, description, type, orden_id, is_read
-        ) VALUES (
-          user_id_destino, notification_title, notification_desc, 'info', NEW.id, false
-        );
+        BEGIN
+          INSERT INTO public.user_notifications (
+            user_id, title, description, type, orden_id, is_read
+          ) VALUES (
+            user_id_destino, notification_title, notification_desc, 'info', NEW.id, false
+          );
+        EXCEPTION WHEN OTHERS THEN
+          -- Log error pero no fallar el trigger
+          RAISE WARNING 'Error creando notificación para usuario %: %', user_id_destino, SQLERRM;
+        END;
+      ELSE
+        RAISE NOTICE '⚠️ No se encontró user_id para operario: %', NEW.operario_asignado;
       END IF;
     END IF;
     
     -- Notificar al creador si es diferente del operario
-    IF NEW.nombre_creador IS NOT NULL AND NEW.nombre_creador != NEW.operario_asignado THEN
+    IF NEW.nombre_creador IS NOT NULL 
+       AND trim(NEW.nombre_creador) != '' 
+       AND (NEW.operario_asignado IS NULL OR trim(NEW.nombre_creador) != trim(NEW.operario_asignado)) THEN
       user_id_destino := public.get_user_id_from_nombre(NEW.nombre_creador);
       
       IF user_id_destino IS NOT NULL THEN
@@ -63,11 +85,17 @@ BEGIN
         notification_desc := format('La orden #%s (%s) cambió de "%s" a "%s"', 
           NEW.numero_op, NEW.cliente, OLD.estado, NEW.estado);
         
-        INSERT INTO public.user_notifications (
-          user_id, title, description, type, orden_id, is_read
-        ) VALUES (
-          user_id_destino, notification_title, notification_desc, 'info', NEW.id, false
-        );
+        BEGIN
+          INSERT INTO public.user_notifications (
+            user_id, title, description, type, orden_id, is_read
+          ) VALUES (
+            user_id_destino, notification_title, notification_desc, 'info', NEW.id, false
+          );
+        EXCEPTION WHEN OTHERS THEN
+          RAISE WARNING 'Error creando notificación para creador %: %', user_id_destino, SQLERRM;
+        END;
+      ELSE
+        RAISE NOTICE '⚠️ No se encontró user_id para creador: %', NEW.nombre_creador;
       END IF;
     END IF;
   END IF;
@@ -110,20 +138,27 @@ DECLARE
 BEGIN
   -- Solo notificar si el operario cambió y no es NULL
   IF NEW.operario_asignado IS NOT NULL 
-     AND (OLD.operario_asignado IS NULL OR OLD.operario_asignado != NEW.operario_asignado) THEN
+     AND trim(NEW.operario_asignado) != ''
+     AND (OLD.operario_asignado IS NULL OR trim(OLD.operario_asignado) != trim(NEW.operario_asignado)) THEN
     user_id_destino := public.get_user_id_from_nombre(NEW.operario_asignado);
     
     IF user_id_destino IS NOT NULL THEN
-      INSERT INTO public.user_notifications (
-        user_id, title, description, type, orden_id, is_read
-      ) VALUES (
-        user_id_destino,
-        'Nueva orden asignada',
-        format('Te asignaron la orden #%s: %s', NEW.numero_op, NEW.cliente),
-        'success',
-        NEW.id,
-        false
-      );
+      BEGIN
+        INSERT INTO public.user_notifications (
+          user_id, title, description, type, orden_id, is_read
+        ) VALUES (
+          user_id_destino,
+          'Nueva orden asignada',
+          format('Te asignaron la orden #%s: %s', NEW.numero_op, NEW.cliente),
+          'success',
+          NEW.id,
+          false
+        );
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING 'Error creando notificación de asignación: %', SQLERRM;
+      END;
+    ELSE
+      RAISE NOTICE '⚠️ No se encontró user_id para operario asignado: %', NEW.operario_asignado;
     END IF;
   END IF;
   
@@ -162,20 +197,26 @@ DECLARE
   user_id_destino integer;
 BEGIN
   -- Notificar al operario asignado si existe
-  IF NEW.operario_asignado IS NOT NULL THEN
+  IF NEW.operario_asignado IS NOT NULL AND trim(NEW.operario_asignado) != '' THEN
     user_id_destino := public.get_user_id_from_nombre(NEW.operario_asignado);
     
     IF user_id_destino IS NOT NULL THEN
-      INSERT INTO public.user_notifications (
-        user_id, title, description, type, orden_id, is_read
-      ) VALUES (
-        user_id_destino,
-        'Nueva orden creada',
-        format('Se creó la orden #%s: %s', NEW.numero_op, NEW.cliente),
-        'success',
-        NEW.id,
-        false
-      );
+      BEGIN
+        INSERT INTO public.user_notifications (
+          user_id, title, description, type, orden_id, is_read
+        ) VALUES (
+          user_id_destino,
+          'Nueva orden creada',
+          format('Se creó la orden #%s: %s', NEW.numero_op, NEW.cliente),
+          'success',
+          NEW.id,
+          false
+        );
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING 'Error creando notificación de nueva orden: %', SQLERRM;
+      END;
+    ELSE
+      RAISE NOTICE '⚠️ No se encontró user_id para operario en nueva orden: %', NEW.operario_asignado;
     END IF;
   END IF;
   
