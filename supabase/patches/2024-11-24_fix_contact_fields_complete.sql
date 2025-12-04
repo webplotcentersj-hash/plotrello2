@@ -157,14 +157,18 @@ BEGIN
     RAISE NOTICE '📊 Políticas RLS encontradas: %', policy_count;
     
     -- Listar políticas
-    FOR policy_count IN
-      SELECT policyname, cmd
-      FROM pg_policies
-      WHERE schemaname = 'public'
-        AND tablename = 'ordenes_trabajo'
-    LOOP
-      RAISE NOTICE '  - Política: % (comando: %)', policy_count;
-    END LOOP;
+    DECLARE
+      policy_rec RECORD;
+    BEGIN
+      FOR policy_rec IN
+        SELECT policyname, cmd
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'ordenes_trabajo'
+      LOOP
+        RAISE NOTICE '  - Política: % (comando: %)', policy_rec.policyname, policy_rec.cmd;
+      END LOOP;
+    END;
   ELSE
     RAISE NOTICE '✅ RLS NO está habilitado - no hay restricciones de políticas';
   END IF;
