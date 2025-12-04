@@ -117,9 +117,8 @@ class ApiService {
         .order('fecha_creacion', { ascending: false })
 
       if (error) {
-        // Si el error es por columnas opcionales nuevas, intentar sin ellas
+        // Si el error es por columnas opcionales nuevas (datos de contacto), intentar sin ellas
         const optionalColumns = [
-          'foto_url',
           'telefono_cliente',
           'email_cliente',
           'direccion_cliente',
@@ -130,13 +129,14 @@ class ApiService {
 
         if (optionalColumns.some((col) => error.message.includes(col))) {
           console.warn(
-            '⚠️ Algunas columnas opcionales (foto_url / datos de contacto) no existen aún en esta base. Ejecuta los parches SQL correspondientes si quieres usarlas.'
+            '⚠️ Algunas columnas opcionales de datos de contacto no existen aún en esta base. Ejecuta el parche SQL 2024-11-24_add_contact_fields_to_ordenes.sql si quieres usarlas.'
           )
 
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('ordenes_trabajo')
             .select(
-              'id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, usuario_trabajando_nombre'
+              // Mantener foto_url aunque falten las columnas de contacto
+              'id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre'
             )
             .order('fecha_creacion', { ascending: false })
           
@@ -148,7 +148,6 @@ class ApiService {
           // Agregar campos opcionales como null para cada orden
           const dataWithOptional = (fallbackData || []).map((orden: any) => ({
             ...orden,
-            foto_url: null,
             telefono_cliente: null,
             email_cliente: null,
             direccion_cliente: null,
