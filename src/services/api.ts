@@ -189,6 +189,15 @@ class ApiService {
       }
       
       console.log('📤 Creando orden. Payload completo:', JSON.stringify(ordenToInsert, null, 2))
+      console.log('📞 Datos de contacto en payload:', {
+        telefono: ordenToInsert.telefono_cliente || 'null',
+        ubicacion: ordenToInsert.ubicacion_link || 'null',
+        direccion: ordenToInsert.direccion_cliente || 'null',
+        email: ordenToInsert.email_cliente || 'null',
+        whatsapp: ordenToInsert.whatsapp_link || 'null',
+        drive: ordenToInsert.drive_link || 'null',
+        foto: ordenToInsert.foto_url ? 'presente' : 'null'
+      })
       
       const performInsert = async (payload: Partial<OrdenTrabajo>) => {
         return supabaseClient.from('ordenes_trabajo').insert(payload).select().single()

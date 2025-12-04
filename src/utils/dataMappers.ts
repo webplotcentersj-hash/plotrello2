@@ -163,7 +163,7 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
   const whatsappLink =
     task.whatsappUrl?.trim() || buildWhatsappLinkFromPhone(clientPhone ?? undefined) || null
 
-  return {
+  const payload = {
     numero_op: task.opNumber,
     cliente: task.title,
     dni_cuit: dniCuitValue,
@@ -178,7 +178,7 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
     sector: task.assignedSector,
     materiales: task.materials.join(', '),
     nombre_creador: task.createdBy,
-    foto_url: task.photoUrl,
+    foto_url: task.photoUrl?.trim() || null,
     usuario_trabajando_nombre: task.workingUser ?? null,
     telefono_cliente: clientPhone,
     email_cliente: task.clientEmail?.trim() || null,
@@ -187,6 +187,20 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
     ubicacion_link: task.locationUrl?.trim() || null,
     drive_link: task.driveUrl?.trim() || null
   }
+
+  // Debug: log datos de contacto
+  if (payload.telefono_cliente || payload.ubicacion_link || payload.direccion_cliente) {
+    console.log('📞 taskToOrdenPayload - Datos de contacto en payload:', {
+      telefono: payload.telefono_cliente || 'null',
+      ubicacion: payload.ubicacion_link || 'null',
+      direccion: payload.direccion_cliente || 'null',
+      email: payload.email_cliente || 'null',
+      whatsapp: payload.whatsapp_link || 'null',
+      drive: payload.drive_link || 'null'
+    })
+  }
+
+  return payload
 }
 
 export const parseTaskIdToOrdenId = (taskId: string): number | null => {
