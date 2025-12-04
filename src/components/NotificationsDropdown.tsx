@@ -19,16 +19,24 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
 
   // Cargar notificaciones
   const loadNotifications = async () => {
-    if (!usuario?.id) return
+    if (!usuario?.id) {
+      console.log('🔔 Notificaciones: No hay usuario.id')
+      return
+    }
 
+    console.log('🔔 Cargando notificaciones para usuario ID:', usuario.id)
     setLoading(true)
     try {
       const response = await apiService.getUserNotifications(usuario.id)
+      console.log('🔔 Respuesta de getUserNotifications:', response)
       if (response.success && response.data) {
+        console.log('🔔 Notificaciones cargadas:', response.data.length)
         setNotifications(response.data)
+      } else {
+        console.warn('🔔 Error en respuesta:', response.error)
       }
     } catch (error) {
-      console.error('Error cargando notificaciones:', error)
+      console.error('🔔 Error cargando notificaciones:', error)
     } finally {
       setLoading(false)
     }
