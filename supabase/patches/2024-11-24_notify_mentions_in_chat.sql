@@ -4,6 +4,7 @@ BEGIN;
 
 -- ============================================
 -- FUNCIÓN: Extraer menciones de un texto
+-- Mejorada para detectar mejor los nombres
 -- ============================================
 CREATE OR REPLACE FUNCTION public.extract_mentions(texto text)
 RETURNS text[]
@@ -13,19 +14,30 @@ AS $$
 DECLARE
   mentions text[];
   match text;
+  parts text[];
 BEGIN
   mentions := ARRAY[]::text[];
   
-  -- Buscar patrones @usuario o @nombre_usuario
+  IF texto IS NULL OR trim(texto) = '' THEN
+    RETURN mentions;
+  END IF;
+  
+  -- Buscar todos los patrones @nombre en el texto
+  -- Usar regex para encontrar @ seguido de caracteres alfanuméricos y espacios
   FOR match IN
-    SELECT regexp_split_to_table(texto, '@')
+    SELECT regexp_split_to_table(texto, E'@')
     WHERE regexp_split_to_table ~* '^[a-zA-Z0-9_áéíóúÁÉÍÓÚñÑ\s]+'
   LOOP
     -- Extraer el nombre (hasta encontrar espacio, puntuación o fin de línea)
     match := regexp_replace(match, '[^a-zA-Z0-9_áéíóúÁÉÍÓÚñÑ\s].*', '');
     match := trim(match);
     
-    IF match != '' AND NOT (match = ANY(mentions)) THEN
+    -- Si el match tiene espacios, tomar solo la primera palabra
+    IF position(' ' in match) > 0 THEN
+      match := split_part(match, ' ', 1);
+    END IF;
+    
+    IF match != '' AND length(match) > 0 AND NOT (match = ANY(mentions)) THEN
       mentions := array_append(mentions, match);
     END IF;
   END LOOP;
@@ -61,6 +73,11 @@ BEGIN
   -- Extraer menciones del mensaje
   mentioned_names := public.extract_mentions(NEW.mensaje);
   
+  -- Log para debugging
+  IF array_length(mentioned_names, 1) > 0 THEN
+    RAISE NOTICE '🔍 Menciones detectadas en mensaje: %', array_to_string(mentioned_names, ', ');
+  END IF;
+  
   -- Procesar cada mención
   FOREACH mentioned_name IN ARRAY mentioned_names
   LOOP
@@ -69,14 +86,20 @@ BEGIN
       SELECT id, nombre
       FROM public.usuarios
       WHERE 
-        -- Coincidencia exacta (case-insensitive)
+        -- Coincidencia exacta (case-insensitive, sin espacios extra)
         lower(trim(nombre)) = lower(trim(mentioned_name))
         OR
-        -- Coincidencia parcial (sin dominio de email)
-        (mentioned_name LIKE '%@%' AND lower(trim(nombre)) LIKE '%' || lower(split_part(mentioned_name, '@', 1)) || '%')
+        -- Coincidencia por inicio del nombre (al menos 3 caracteres)
+        (length(trim(mentioned_name)) >= 3 AND lower(trim(nombre)) LIKE lower(trim(mentioned_name)) || '%')
         OR
-        -- Coincidencia por inicio del nombre
-        lower(trim(nombre)) LIKE lower(trim(mentioned_name)) || '%'
+        -- Coincidencia parcial en el nombre (para nombres compuestos)
+        (length(trim(mentioned_name)) >= 3 AND lower(trim(nombre)) LIKE '%' || lower(trim(mentioned_name)) || '%')
+      ORDER BY 
+        CASE 
+          WHEN lower(trim(nombre)) = lower(trim(mentioned_name)) THEN 1
+          WHEN lower(trim(nombre)) LIKE lower(trim(mentioned_name)) || '%' THEN 2
+          ELSE 3
+        END
       LIMIT 1
     LOOP
       mentioned_user_id := mentioned_user_record.id;
@@ -103,17 +126,24 @@ BEGIN
             false
           );
           
-          RAISE NOTICE '✅ Notificación creada para usuario % (mencionado: %)', 
-            mentioned_user_record.nombre, mentioned_name;
+          RAISE NOTICE '✅ Notificación creada para usuario % (ID: %) - mencionado como: "%"', 
+            mentioned_user_record.nombre, mentioned_user_id, mentioned_name;
         EXCEPTION WHEN OTHERS THEN
-          RAISE WARNING 'Error creando notificación de mención para %: %', 
-            mentioned_name, SQLERRM;
+          RAISE WARNING '❌ Error creando notificación de mención para "%" (usuario: %): %', 
+            mentioned_name, mentioned_user_record.nombre, SQLERRM;
         END;
+      ELSE
+        RAISE NOTICE 'ℹ️ Usuario % se mencionó a sí mismo, no se crea notificación', mentioned_user_record.nombre;
       END IF;
       
       -- Salir del loop una vez encontrado
       EXIT;
     END LOOP;
+    
+    -- Si no se encontró el usuario
+    IF mentioned_user_id IS NULL THEN
+      RAISE NOTICE '⚠️ No se encontró usuario para mención: "%"', mentioned_name;
+    END IF;
   END FOREACH;
   
   RETURN NEW;
