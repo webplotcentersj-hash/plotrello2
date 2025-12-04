@@ -147,8 +147,12 @@ END $$;
 -- ============================================
 -- PASO 6: Mostrar ejemplo de orden con múltiples sectores
 -- ============================================
-RAISE NOTICE '';
-RAISE NOTICE '📋 ÓRDENES CON MÚLTIPLES SECTORES (últimas 5):';
+DO $$
+BEGIN
+  RAISE NOTICE '';
+  RAISE NOTICE '📋 ÓRDENES CON MÚLTIPLES SECTORES (últimas 5):';
+END $$;
+
 SELECT 
   id,
   numero_op,
@@ -165,8 +169,12 @@ LIMIT 5;
 -- ============================================
 -- PASO 7: Mostrar sub-tareas existentes
 -- ============================================
-RAISE NOTICE '';
-RAISE NOTICE '📋 SUB-TAREAS EXISTENTES (últimas 10):';
+DO $$
+BEGIN
+  RAISE NOTICE '';
+  RAISE NOTICE '📋 SUB-TAREAS EXISTENTES (últimas 10):';
+END $$;
+
 SELECT 
   t.id,
   t.id_orden,
