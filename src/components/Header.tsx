@@ -41,7 +41,12 @@ const Header = ({ teamMembers, activity, onAddNewOrder, onOptimizeSprint, onNavi
           <h1>Tablero Plot</h1>
         </div>
         <div className="header-actions">
-          <NotificationsDropdown />
+          <NotificationsDropdown onNotificationClick={(notification) => {
+            // Si es una notificación de mención del chat, navegar al chat
+            if (notification.type === 'mention' && notification.description?.includes('te mencionó en')) {
+              onNavigateToChat?.()
+            }
+          }} />
           {onAddNewOrder && (
             <button className="brand-button" onClick={onAddNewOrder}>
               + Agregar Nueva Orden

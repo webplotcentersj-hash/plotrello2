@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import apiService from '../services/api'
 import { supabase } from '../services/supabaseClient'
@@ -11,6 +12,7 @@ type NotificationsDropdownProps = {
 
 const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownProps) => {
   const { usuario } = useAuth()
+  const navigate = useNavigate()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -178,7 +180,7 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
       case 'error':
         return '❌'
       case 'mention':
-        return '👤'
+        return '💬'
       default:
         return 'ℹ️'
     }
@@ -189,6 +191,16 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
       markAsRead(notification.id)
     }
     setIsOpen(false)
+    
+    // Navegar según el tipo de notificación
+    if (notification.type === 'mention' && notification.description?.includes('te mencionó en')) {
+      // Es una notificación de mención del chat
+      navigate('/chat')
+    } else if (notification.orden_id) {
+      // Es una notificación relacionada con una orden
+      navigate('/')
+    }
+    
     if (onNotificationClick) {
       onNotificationClick(notification)
     }
