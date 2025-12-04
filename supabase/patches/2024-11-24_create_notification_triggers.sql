@@ -13,9 +13,25 @@ AS $$
 DECLARE
   user_id_result integer;
   nombre_limpio text;
+  usuarios_exists boolean;
 BEGIN
+  -- Verificar si la tabla usuarios existe
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'usuarios'
+  ) INTO usuarios_exists;
+  
+  IF NOT usuarios_exists THEN
+    RETURN NULL;
+  END IF;
+  
   -- Limpiar el nombre (quitar espacios, convertir a minúsculas para comparación)
   nombre_limpio := trim(lower(nombre_usuario));
+  
+  IF nombre_limpio IS NULL OR nombre_limpio = '' THEN
+    RETURN NULL;
+  END IF;
   
   -- Buscar por coincidencia exacta primero
   SELECT id INTO user_id_result

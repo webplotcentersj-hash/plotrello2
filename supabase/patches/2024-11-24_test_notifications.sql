@@ -39,19 +39,31 @@ DO $$
 DECLARE
   test_user_id integer;
   test_nombre text;
+  usuarios_exists boolean;
 BEGIN
-  -- Obtener un nombre de usuario de prueba
-  SELECT nombre INTO test_nombre
-  FROM public.usuarios
-  LIMIT 1;
+  -- Verificar si la tabla usuarios existe
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'usuarios'
+  ) INTO usuarios_exists;
   
-  IF test_nombre IS NOT NULL THEN
-    test_user_id := public.get_user_id_from_nombre(test_nombre);
-    RAISE NOTICE '✅ Función get_user_id_from_nombre probada:';
-    RAISE NOTICE '   Usuario: %', test_nombre;
-    RAISE NOTICE '   ID encontrado: %', test_user_id;
+  IF usuarios_exists THEN
+    -- Obtener un nombre de usuario de prueba
+    SELECT nombre INTO test_nombre
+    FROM public.usuarios
+    LIMIT 1;
+    
+    IF test_nombre IS NOT NULL THEN
+      test_user_id := public.get_user_id_from_nombre(test_nombre);
+      RAISE NOTICE '✅ Función get_user_id_from_nombre probada:';
+      RAISE NOTICE '   Usuario: %', test_nombre;
+      RAISE NOTICE '   ID encontrado: %', test_user_id;
+    ELSE
+      RAISE WARNING '⚠️ No hay usuarios en la tabla usuarios';
+    END IF;
   ELSE
-    RAISE WARNING '⚠️ No hay usuarios en la tabla usuarios';
+    RAISE WARNING '⚠️ La tabla usuarios no existe. Los triggers de notificaciones no funcionarán correctamente.';
   END IF;
 END $$;
 
@@ -75,39 +87,63 @@ DECLARE
   test_user_id integer;
   test_orden_id integer;
   notification_id integer;
+  usuarios_exists boolean;
+  ordenes_exists boolean;
 BEGIN
+  -- Verificar si las tablas existen
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'usuarios'
+  ) INTO usuarios_exists;
+  
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'ordenes_trabajo'
+  ) INTO ordenes_exists;
+  
+  IF NOT usuarios_exists THEN
+    RAISE WARNING '⚠️ La tabla usuarios no existe. No se puede crear notificación de prueba.';
+    RETURN;
+  END IF;
+  
   -- Obtener un usuario de prueba
   SELECT id INTO test_user_id
   FROM public.usuarios
   LIMIT 1;
   
-  -- Obtener una orden de prueba
-  SELECT id INTO test_orden_id
-  FROM public.ordenes_trabajo
-  LIMIT 1;
+  -- Obtener una orden de prueba (opcional)
+  IF ordenes_exists THEN
+    SELECT id INTO test_orden_id
+    FROM public.ordenes_trabajo
+    LIMIT 1;
+  END IF;
   
   IF test_user_id IS NOT NULL THEN
     -- Crear notificación de prueba
-    INSERT INTO public.user_notifications (
-      user_id,
-      title,
-      description,
-      type,
-      orden_id,
-      is_read
-    ) VALUES (
-      test_user_id,
-      '🔔 Notificación de prueba',
-      'Si ves esto, el sistema de notificaciones funciona correctamente',
-      'info',
-      test_orden_id,
-      false
-    )
-    RETURNING id INTO notification_id;
-    
-    RAISE NOTICE '✅ Notificación de prueba creada con ID: %', notification_id;
-    RAISE NOTICE '   Usuario: %', test_user_id;
-    RAISE NOTICE '   Orden: %', test_orden_id;
+    BEGIN
+      INSERT INTO public.user_notifications (
+        user_id,
+        title,
+        description,
+        type,
+        orden_id,
+        is_read
+      ) VALUES (
+        test_user_id,
+        '🔔 Notificación de prueba',
+        'Si ves esto, el sistema de notificaciones funciona correctamente',
+        'info',
+        test_orden_id,
+        false
+      )
+      RETURNING id INTO notification_id;
+      
+      RAISE NOTICE '✅ Notificación de prueba creada con ID: %', notification_id;
+      RAISE NOTICE '   Usuario: %', test_user_id;
+      RAISE NOTICE '   Orden: %', COALESCE(test_orden_id::text, 'N/A');
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '❌ Error creando notificación de prueba: %', SQLERRM;
+    END;
   ELSE
     RAISE WARNING '⚠️ No se pudo crear notificación de prueba: no hay usuarios';
   END IF;
