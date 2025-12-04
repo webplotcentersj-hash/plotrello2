@@ -5,61 +5,61 @@ export const BOARD_COLUMNS: ColumnConfig[] = [
     id: 'diseno-grafico',
     label: 'Diseño Gráfico',
     description: 'Briefs y piezas esperando toma de trabajo',
-    accent: '#f97316'
+    accent: '#f97316' // naranja intenso
   },
   {
     id: 'diseno-proceso',
     label: 'Diseño en Proceso',
     description: 'Diseñadores actuando ahora mismo',
-    accent: '#fbbf24'
+    accent: '#ef4444' // rojo fuerte
   },
   {
     id: 'en-espera',
     label: 'En Espera',
     description: 'Pedidos pausados por aprobación o insumo',
-    accent: '#facc15'
+    accent: '#eab308' // amarillo
   },
   {
     id: 'imprenta',
     label: 'Imprenta (Área de Impresión)',
     description: 'Archivos listos para salida de impresión',
-    accent: '#38bdf8'
+    accent: '#22c55e' // verde
   },
   {
     id: 'taller-imprenta',
     label: 'Taller de Imprenta',
     description: 'Procesos físicos dentro de imprenta',
-    accent: '#0ea5e9'
+    accent: '#06b6d4' // cian
   },
   {
     id: 'taller-grafico',
     label: 'Taller Gráfico',
     description: 'Acabados, montaje y control visual',
-    accent: '#6366f1'
+    accent: '#3b82f6' // azul
   },
   {
     id: 'instalaciones',
     label: 'Instalaciones',
     description: 'Equipos listos para ir al sitio del cliente',
-    accent: '#a855f7'
+    accent: '#8b5cf6' // violeta
   },
   {
     id: 'metalurgica',
     label: 'Metalúrgica',
     description: 'Estructuras y soportes especiales',
-    accent: '#ec4899'
+    accent: '#ec4899' // rosa
   },
   {
     id: 'finalizado-taller',
     label: 'Finalizado en Taller',
     description: 'Listo para entregar desde taller',
-    accent: '#22c55e'
+    accent: '#14b8a6' // verde agua
   },
   {
     id: 'almacen-entrega',
     label: 'Almacén de Entrega',
     description: 'Pedidos embalados esperando retiro/entrega',
-    accent: '#84cc16'
+    accent: '#a3e635' // lima
   }
 ]
 
