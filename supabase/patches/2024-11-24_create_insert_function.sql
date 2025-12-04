@@ -6,10 +6,10 @@ BEGIN;
 CREATE OR REPLACE FUNCTION public.create_orden_with_contact(
   p_numero_op varchar,
   p_cliente varchar,
+  p_fecha_entrega date,
   p_descripcion text DEFAULT NULL,
   p_estado varchar DEFAULT 'Pendiente',
   p_prioridad varchar DEFAULT 'Normal',
-  p_fecha_entrega date,
   p_operario_asignado varchar DEFAULT NULL,
   p_complejidad text DEFAULT 'Media',
   p_sector text DEFAULT 'Diseño Gráfico',
