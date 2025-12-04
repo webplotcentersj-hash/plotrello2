@@ -121,6 +121,37 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
                 <span className="dni-cuit-value">{task.dniCuit}</span>
               </div>
             )}
+            {task.clientPhone && (
+              <div className="task-contact-info-compact">
+                <span className="contact-info-label">Tel:</span>
+                <span className="contact-info-value">{task.clientPhone}</span>
+                {task.whatsappUrl && (
+                  <a
+                    href={task.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="whatsapp-link-compact"
+                    title="Abrir WhatsApp"
+                  >
+                    🟢
+                  </a>
+                )}
+              </div>
+            )}
+            {task.locationUrl && (
+              <div className="task-contact-info-compact">
+                <span className="contact-info-label">Ubicación:</span>
+                <a
+                  href={task.locationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contact-info-link"
+                  title="Abrir en Google Maps"
+                >
+                  📍 Ver mapa
+                </a>
+              </div>
+            )}
             <div className="task-people">
               <div className="people-chip creator-chip">
                 <span className="people-label">Creó:</span>

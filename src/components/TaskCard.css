@@ -244,6 +244,52 @@
   font-family: 'Courier New', monospace;
 }
 
+.task-contact-info-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.contact-info-label {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.contact-info-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.contact-info-link {
+  font-weight: 500;
+  color: #60a5fa;
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+
+.contact-info-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.whatsapp-link-compact {
+  font-size: 0.9rem;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: transform 0.2s;
+}
+
+.whatsapp-link-compact:hover {
+  transform: scale(1.2);
+}
+
 .task-card h4 {
   margin: 4px 0 0 0;
   font-size: 1.25rem;
