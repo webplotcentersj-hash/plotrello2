@@ -2,7 +2,13 @@
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION public.create_orden_with_contact(
+-- Eliminar la función existente si existe (necesario para cambiar el tipo de retorno)
+DROP FUNCTION IF EXISTS public.create_orden_with_contact(
+  varchar, varchar, date, text, varchar, varchar, varchar, text, text, text[], text, text, varchar, text, text, text, text, text, text, text, text
+);
+
+-- Crear la función con el nuevo tipo de retorno (solo ID)
+CREATE FUNCTION public.create_orden_with_contact(
   p_numero_op varchar,
   p_cliente varchar,
   p_fecha_entrega date,
