@@ -172,8 +172,12 @@ class ApiService {
       // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
       
-      // Solo eliminar foto_url si está vacío o es null (pero mantenerlo si tiene valor)
-      if (!ordenToInsert.foto_url || ordenToInsert.foto_url.trim() === '') {
+      // Solo eliminar foto_url si está vacío, null o undefined (pero NUNCA eliminarlo si tiene valor)
+      if (ordenToInsert.foto_url && ordenToInsert.foto_url.trim() !== '') {
+        // Mantener foto_url - es importante
+        console.log('📸 Foto URL presente:', ordenToInsert.foto_url)
+      } else {
+        // Solo eliminar si realmente está vacío
         delete ordenToInsert.foto_url
       }
       
@@ -202,8 +206,8 @@ class ApiService {
                               errorLower.includes('could not find')
         
         if (isColumnError) {
-          const optionalColumns = [
-            'foto_url',
+          // Separar foto_url de las otras columnas opcionales - foto_url es más importante
+          const contactColumns = [
             'telefono_cliente',
             'email_cliente',
             'direccion_cliente',
@@ -211,41 +215,52 @@ class ApiService {
             'ubicacion_link',
             'drive_link'
           ]
+          const allOptionalColumns = ['foto_url', ...contactColumns]
 
           // Detectar todas las columnas mencionadas en el error
           const missingColumns: string[] = []
-          optionalColumns.forEach((col) => {
+          allOptionalColumns.forEach((col) => {
             if (errorLower.includes(col.toLowerCase())) {
               missingColumns.push(col)
             }
           })
           
           if (missingColumns.length > 0) {
-            // Eliminar SOLO las columnas que faltan
+            // Eliminar SOLO las columnas que específicamente faltan
             const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToInsert }
             missingColumns.forEach((col) => {
               // @ts-expect-error index access
               delete sanitizedPayload[col]
             })
 
+            console.log(`⚠️ Eliminando columnas faltantes: ${missingColumns.join(', ')}. Reintentando...`)
             const fallback = await performInsert(sanitizedPayload)
             
             if (fallback.error) {
-              // Si aún falla, puede ser otra columna. Intentar sin TODAS las opcionales
+              // Si aún falla, puede ser otra columna. Intentar sin SOLO las columnas de contacto (mantener foto_url si existe)
               const minimalPayload: Partial<OrdenTrabajo> = { ...sanitizedPayload }
-              optionalColumns.forEach((col) => {
+              // Solo eliminar columnas de contacto, NO foto_url
+              contactColumns.forEach((col) => {
                 // @ts-expect-error index access
                 delete minimalPayload[col]
               })
               
+              // Si foto_url estaba en el error, también eliminarlo
+              if (missingColumns.includes('foto_url')) {
+                delete minimalPayload.foto_url
+              }
+              
+              console.log('⚠️ Reintentando sin columnas de contacto...')
               const finalAttempt = await performInsert(minimalPayload)
               if (finalAttempt.error) {
                 return { success: false, error: finalAttempt.error.message }
               }
+              console.log('✅ Orden creada sin algunas columnas opcionales')
               return { success: true, data: finalAttempt.data as OrdenTrabajo }
             }
 
             // Éxito después de eliminar columnas faltantes
+            console.log(`✅ Orden creada. Columnas eliminadas: ${missingColumns.join(', ')}`)
             return { success: true, data: fallback.data as OrdenTrabajo }
           }
         }
