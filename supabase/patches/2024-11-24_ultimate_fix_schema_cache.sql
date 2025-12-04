@@ -60,7 +60,10 @@ END $$;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ordenes_trabajo TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ordenes_trabajo TO authenticated;
 
-RAISE NOTICE '✅ Permisos GRANT otorgados';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Permisos GRANT otorgados';
+END $$;
 
 -- ============================================
 -- MÉTODO 5: Verificar RLS y crear políticas si es necesario
