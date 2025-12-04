@@ -225,41 +225,55 @@ class ApiService {
       let { data, error } = await performInsert(ordenToInsert)
 
       if (error) {
-        console.error('❌ Error al crear orden:', error.message, error)
+        console.error('❌ Error al crear orden:', error.message)
         
-        // Si hay error, intentar eliminando TODAS las columnas opcionales y reintentar
-        const optionalColumns = [
-          'foto_url',
-          'telefono_cliente',
-          'email_cliente',
-          'direccion_cliente',
-          'whatsapp_link',
-          'ubicacion_link',
-          'drive_link'
-        ]
+        // Solo eliminar columnas si el error específicamente menciona que no existen
+        const errorLower = error.message.toLowerCase()
+        const isColumnError = errorLower.includes('column') || 
+                              errorLower.includes('does not exist') || 
+                              errorLower.includes('not found') ||
+                              errorLower.includes('schema cache')
+        
+        if (isColumnError) {
+          const optionalColumns = [
+            'foto_url',
+            'telefono_cliente',
+            'email_cliente',
+            'direccion_cliente',
+            'whatsapp_link',
+            'ubicacion_link',
+            'drive_link'
+          ]
 
-        console.warn('⚠️ Error detectado. Intentando crear sin columnas opcionales...')
-        
-        // Crear payload mínimo sin columnas opcionales
-        const minimalPayload: Partial<OrdenTrabajo> = { ...ordenToInsert }
-        optionalColumns.forEach((col) => {
-          // @ts-expect-error index access
-          delete minimalPayload[col]
-        })
+          // Solo eliminar las columnas que específicamente menciona el error
+          const missingColumns = optionalColumns.filter((col) => 
+            errorLower.includes(col.toLowerCase())
+          )
+          
+          if (missingColumns.length > 0) {
+            console.warn(`⚠️ Columnas faltantes detectadas: ${missingColumns.join(', ')}. Eliminándolas y reintentando...`)
+            
+            const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToInsert }
+            missingColumns.forEach((col) => {
+              // @ts-expect-error index access
+              delete sanitizedPayload[col]
+            })
 
-        console.log('📤 Reintentando con payload mínimo:', JSON.stringify(minimalPayload, null, 2))
-        const fallback = await performInsert(minimalPayload)
-        
-        if (fallback.error) {
-          console.error('❌ Error persistente incluso sin columnas opcionales:', fallback.error.message)
-          return { 
-            success: false, 
-            error: `No se pudo crear la orden: ${fallback.error.message}. Revisa los campos obligatorios.` 
+            const fallback = await performInsert(sanitizedPayload)
+            
+            if (fallback.error) {
+              console.error('❌ Error persistente:', fallback.error.message)
+              return { success: false, error: fallback.error.message }
+            }
+
+            console.warn(`✅ Orden creada pero sin: ${missingColumns.join(', ')}. Ejecuta el parche SQL.`)
+            return { success: true, data: fallback.data as OrdenTrabajo }
           }
         }
 
-        console.warn('✅ Orden creada sin datos opcionales (foto/contacto). Ejecuta los parches SQL para habilitarlos.')
-        return { success: true, data: fallback.data as OrdenTrabajo }
+        // Si el error NO es por columnas faltantes, retornar el error
+        console.error('❌ Error no relacionado con columnas:', error.message)
+        return { success: false, error: error.message }
       }
       
       // Log de éxito con datos guardados
