@@ -7,13 +7,21 @@ BEGIN;
 -- PASO 1: Verificar que la tabla existe
 -- ============================================
 DO $$
+DECLARE
+  table_exists boolean;
 BEGIN
-  IF NOT EXISTS (
+  SELECT EXISTS (
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public'
       AND table_name = 'ordenes_trabajo'
-  ) THEN
-    RAISE EXCEPTION 'La tabla ordenes_trabajo no existe. Ejecuta primero el schema.sql';
+  ) INTO table_exists;
+  
+  IF NOT table_exists THEN
+    RAISE WARNING '⚠️ La tabla ordenes_trabajo no existe. Este script solo agregará columnas si la tabla existe.';
+    RAISE WARNING '   Si necesitas crear la tabla, ejecuta primero el schema.sql';
+    -- No lanzamos excepción, solo continuamos (las siguientes secciones verificarán si existe)
+  ELSE
+    RAISE NOTICE '✅ La tabla ordenes_trabajo existe';
   END IF;
 END $$;
 
