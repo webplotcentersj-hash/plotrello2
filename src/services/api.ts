@@ -353,6 +353,15 @@ class ApiService {
       }
       
       console.log('📤 Actualizando orden. Payload completo:', JSON.stringify(ordenToUpdate, null, 2))
+      console.log('📞 Datos de contacto en actualización:', {
+        telefono: ordenToUpdate.telefono_cliente || 'null',
+        ubicacion: ordenToUpdate.ubicacion_link || 'null',
+        direccion: ordenToUpdate.direccion_cliente || 'null',
+        email: ordenToUpdate.email_cliente || 'null',
+        whatsapp: ordenToUpdate.whatsapp_link || 'null',
+        drive: ordenToUpdate.drive_link || 'null',
+        foto: ordenToUpdate.foto_url ? 'presente' : 'null'
+      })
 
       const performUpdate = async (payload: Partial<OrdenTrabajo>) => {
         return supabaseClient
@@ -367,6 +376,7 @@ class ApiService {
       let { data, error } = await performUpdate(ordenToUpdate)
 
       if (error) {
+        console.error('❌ Error al actualizar orden:', error.message, error)
         const errorLower = error.message.toLowerCase()
         const isColumnError = errorLower.includes('column') || 
                               errorLower.includes('does not exist') || 
@@ -386,15 +396,19 @@ class ApiService {
           ]
           const allOptionalColumns = ['foto_url', ...contactColumns]
 
-          // Detectar todas las columnas mencionadas en el error
+          // Detectar SOLO las columnas que específicamente están mencionadas en el error
           const missingColumns: string[] = []
           allOptionalColumns.forEach((col) => {
-            if (errorLower.includes(col.toLowerCase())) {
+            // Buscar el nombre exacto de la columna en el error (con guiones bajos y espacios)
+            const colPattern = col.toLowerCase().replace(/_/g, '[ _]')
+            const regex = new RegExp(colPattern, 'i')
+            if (regex.test(errorLower)) {
               missingColumns.push(col)
             }
           })
           
           if (missingColumns.length > 0) {
+            console.warn(`⚠️ Columnas faltantes detectadas en el error: ${missingColumns.join(', ')}`)
             // Eliminar SOLO las columnas que específicamente faltan
             const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToUpdate }
             missingColumns.forEach((col) => {
@@ -403,9 +417,11 @@ class ApiService {
             })
 
             console.log(`⚠️ Eliminando columnas faltantes: ${missingColumns.join(', ')}. Reintentando...`)
+            console.log('📤 Payload sanitizado:', JSON.stringify(sanitizedPayload, null, 2))
             const fallback = await performUpdate(sanitizedPayload)
             
             if (fallback.error) {
+              console.error('❌ Error persistente después de eliminar columnas:', fallback.error.message)
               // Si aún falla, puede ser otra columna. Intentar sin SOLO las columnas de contacto (mantener foto_url si existe)
               const minimalPayload: Partial<OrdenTrabajo> = { ...sanitizedPayload }
               // Solo eliminar columnas de contacto, NO foto_url
@@ -422,6 +438,7 @@ class ApiService {
               console.log('⚠️ Reintentando sin columnas de contacto...')
               const finalAttempt = await performUpdate(minimalPayload)
               if (finalAttempt.error) {
+                console.error('❌ Error final:', finalAttempt.error.message)
                 return { success: false, error: finalAttempt.error.message }
               }
               console.log('✅ Orden actualizada sin algunas columnas opcionales')
@@ -431,12 +448,37 @@ class ApiService {
             // Éxito después de eliminar columnas faltantes
             console.log(`✅ Orden actualizada. Columnas eliminadas: ${missingColumns.join(', ')}`)
             return { success: true, data: fallback.data as OrdenTrabajo }
+          } else {
+            // El error menciona "column" pero no menciona ninguna columna específica de contacto
+            // Esto podría ser un error de otra columna. Intentar de todas formas.
+            console.warn('⚠️ Error de columna detectado pero no se identificaron columnas de contacto específicas. Reintentando sin columnas de contacto...')
+            const minimalPayload: Partial<OrdenTrabajo> = { ...ordenToUpdate }
+            contactColumns.forEach((col) => {
+              // @ts-expect-error index access
+              delete minimalPayload[col]
+            })
+            const finalAttempt = await performUpdate(minimalPayload)
+            if (finalAttempt.error) {
+              console.error('❌ Error final:', finalAttempt.error.message)
+              return { success: false, error: finalAttempt.error.message }
+            }
+            console.log('✅ Orden actualizada sin columnas de contacto (fallback)')
+            return { success: true, data: finalAttempt.data as OrdenTrabajo }
           }
         }
 
         // Si el error NO es por columnas faltantes, retornar el error
         console.error('❌ Error no relacionado con columnas:', error.message)
         return { success: false, error: error.message }
+      }
+      
+      // Éxito - verificar que los datos se guardaron
+      if (ordenToUpdate.telefono_cliente || ordenToUpdate.ubicacion_link || ordenToUpdate.direccion_cliente) {
+        console.log('✅ Orden actualizada con datos de contacto:', {
+          telefono: ordenToUpdate.telefono_cliente || 'no',
+          ubicacion: ordenToUpdate.ubicacion_link || 'no',
+          direccion: ordenToUpdate.direccion_cliente || 'no'
+        })
       }
       
       // Log de éxito con datos guardados
