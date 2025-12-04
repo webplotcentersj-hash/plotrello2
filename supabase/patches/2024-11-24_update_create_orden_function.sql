@@ -1,13 +1,38 @@
 -- Actualizar función create_orden_with_contact para incluir sectores múltiples y sector_inicial
+-- IMPORTANTE: Este script elimina la función existente y la recrea con un nuevo tipo de retorno
 
 BEGIN;
 
--- Eliminar la función existente si existe (necesario para cambiar el tipo de retorno)
-DROP FUNCTION IF EXISTS public.create_orden_with_contact(
-  varchar, varchar, date, text, varchar, varchar, varchar, text, text, text[], text, text, varchar, text, text, text, text, text, text, text, text
-);
+-- ============================================
+-- PASO 1: Eliminar TODAS las variantes de la función existente
+-- ============================================
+DO $$
+DECLARE
+  func_record record;
+BEGIN
+  -- Buscar todas las variantes de la función
+  FOR func_record IN
+    SELECT 
+      p.oid,
+      p.proname,
+      pg_get_function_identity_arguments(p.oid) AS args
+    FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public'
+      AND p.proname = 'create_orden_with_contact'
+  LOOP
+    -- Eliminar cada variante encontrada
+    EXECUTE format('DROP FUNCTION IF EXISTS public.%I(%s) CASCADE', 
+      func_record.proname, 
+      func_record.args
+    );
+    RAISE NOTICE '✅ Función eliminada: %(%)', func_record.proname, func_record.args;
+  END LOOP;
+END $$;
 
--- Crear la función con el nuevo tipo de retorno (solo ID)
+-- ============================================
+-- PASO 2: Crear la función con el nuevo tipo de retorno (solo ID)
+-- ============================================
 CREATE FUNCTION public.create_orden_with_contact(
   p_numero_op varchar,
   p_cliente varchar,
@@ -118,8 +143,29 @@ END;
 $$;
 
 -- Otorgar permisos
-GRANT EXECUTE ON FUNCTION public.create_orden_with_contact TO anon;
-GRANT EXECUTE ON FUNCTION public.create_orden_with_contact TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_orden_with_contact(
+  varchar, varchar, date, text, varchar, varchar, varchar, text, text, text[], text, text, varchar, text, text, text, text, text, text, text, text
+) TO anon;
+
+GRANT EXECUTE ON FUNCTION public.create_orden_with_contact(
+  varchar, varchar, date, text, varchar, varchar, varchar, text, text, text[], text, text, varchar, text, text, text, text, text, text, text, text
+) TO authenticated;
+
+-- Verificar que la función se creó correctamente
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public'
+      AND p.proname = 'create_orden_with_contact'
+      AND pg_get_function_result(p.oid) = 'integer'
+  ) THEN
+    RAISE NOTICE '✅ Función create_orden_with_contact recreada correctamente (retorna integer)';
+  ELSE
+    RAISE WARNING '⚠️ La función no se creó o no tiene el tipo de retorno esperado';
+  END IF;
+END $$;
 
 COMMIT;
 
