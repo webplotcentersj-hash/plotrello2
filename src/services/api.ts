@@ -111,7 +111,7 @@ class ApiService {
       // Seleccionar columnas explícitamente para evitar errores si falta foto_url
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .select('id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre')
+        .select('id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre, telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link')
         .order('fecha_creacion', { ascending: false })
 
       if (error) {
@@ -120,7 +120,7 @@ class ApiService {
           console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('ordenes_trabajo')
-            .select('id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador')
+            .select('id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link')
             .order('fecha_creacion', { ascending: false })
           
           if (fallbackError) {

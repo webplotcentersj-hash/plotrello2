@@ -136,6 +136,74 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
           <div className="task-body">
             <p className="task-description">{task.summary}</p>
 
+            {(task.clientPhone ||
+              task.clientEmail ||
+              task.clientAddress ||
+              task.whatsappUrl ||
+              task.locationUrl ||
+              task.driveUrl) && (
+              <div className="task-contact">
+                <span className="section-label">Contacto cliente:</span>
+                <div className="task-contact-links">
+                  {task.clientPhone && (
+                    <div className="contact-item">
+                      <span className="contact-label">Teléfono</span>
+                      <span className="contact-value">{task.clientPhone}</span>
+                    </div>
+                  )}
+                  {(task.whatsappUrl || task.clientPhone) && (
+                    <a
+                      className="contact-pill whatsapp"
+                      href={
+                        task.whatsappUrl ||
+                        `https://wa.me/${encodeURIComponent(
+                          task.clientPhone!.replace(/[^0-9]/g, '')
+                        )}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      🟢 WhatsApp
+                    </a>
+                  )}
+                  {task.clientEmail && (
+                    <a
+                      className="contact-pill email"
+                      href={`mailto:${task.clientEmail}`}
+                    >
+                      ✉️ Mail
+                    </a>
+                  )}
+                  {task.clientAddress && (
+                    <div className="contact-item">
+                      <span className="contact-label">Dirección</span>
+                      <span className="contact-value">{task.clientAddress}</span>
+                    </div>
+                  )}
+                  {task.locationUrl && (
+                    <a
+                      className="contact-pill location"
+                      href={task.locationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      📍 Ubicación
+                    </a>
+                  )}
+                  {task.driveUrl && (
+                    <a
+                      className="contact-pill drive"
+                      href={task.driveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      📂 Drive
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
             {task.materials.length > 0 && (
               <div className="task-materials">
                 <span className="section-label">Materiales:</span>

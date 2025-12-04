@@ -84,7 +84,13 @@ const TaskEditModal = ({
         ownerId: task.ownerId,
         dueDate: task.dueDate,
         assignedSector: task.assignedSector,
-        photoUrl: task.photoUrl
+        photoUrl: task.photoUrl,
+        clientPhone: task.clientPhone,
+        clientEmail: task.clientEmail,
+        clientAddress: task.clientAddress,
+        whatsappUrl: task.whatsappUrl,
+        locationUrl: task.locationUrl,
+        driveUrl: task.driveUrl
       })
       setSelectedSectors(task.assignedSector ? [task.assignedSector] : [])
       setMaterials(
@@ -479,6 +485,69 @@ const TaskEditModal = ({
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
               placeholder="Sin descripción."
             />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Teléfono cliente (opcional)</label>
+              <input
+                type="text"
+                value={formData.clientPhone || ''}
+                onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
+                placeholder="+54 9 11 ..."
+              />
+            </div>
+            <div className="form-group">
+              <label>Email cliente (opcional)</label>
+              <input
+                type="email"
+                value={formData.clientEmail || ''}
+                onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+                placeholder="cliente@correo.com"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Dirección cliente (opcional)</label>
+              <input
+                type="text"
+                value={formData.clientAddress || ''}
+                onChange={(e) => setFormData({ ...formData, clientAddress: e.target.value })}
+                placeholder="Calle, número, ciudad..."
+              />
+            </div>
+            <div className="form-group">
+              <label>Link de ubicación (Google Maps) (opcional)</label>
+              <input
+                type="url"
+                value={formData.locationUrl || ''}
+                onChange={(e) => setFormData({ ...formData, locationUrl: e.target.value })}
+                placeholder="https://maps.google.com/..."
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Link de WhatsApp (opcional)</label>
+              <input
+                type="url"
+                value={formData.whatsappUrl || ''}
+                onChange={(e) => setFormData({ ...formData, whatsappUrl: e.target.value })}
+                placeholder="https://wa.me/..."
+              />
+            </div>
+            <div className="form-group">
+              <label>Link de Drive (opcional)</label>
+              <input
+                type="url"
+                value={formData.driveUrl || ''}
+                onChange={(e) => setFormData({ ...formData, driveUrl: e.target.value })}
+                placeholder="https://drive.google.com/..."
+              />
+            </div>
           </div>
 
           <div className="form-group history-section">

@@ -90,7 +90,13 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => ({
   createdAt: orden.fecha_creacion ?? new Date().toISOString(),
   dueDate: orden.fecha_entrega ?? orden.fecha_creacion ?? new Date().toISOString(),
   updatedAt: orden.fecha_ingreso ?? orden.fecha_creacion ?? new Date().toISOString(),
-  impact: mapComplejidadToImpact(orden.complejidad)
+  impact: mapComplejidadToImpact(orden.complejidad),
+  clientPhone: orden.telefono_cliente ?? undefined,
+  clientEmail: orden.email_cliente ?? undefined,
+  clientAddress: orden.direccion_cliente ?? undefined,
+  whatsappUrl: orden.whatsapp_link ?? undefined,
+  locationUrl: orden.ubicacion_link ?? undefined,
+  driveUrl: orden.drive_link ?? undefined
 })
 
 export const historialToActivity = (registro: HistorialMovimiento): ActivityEvent => ({
@@ -118,19 +124,25 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
     numero_op: task.opNumber,
     cliente: task.title,
     dni_cuit: dniCuitValue,
-  descripcion: task.summary,
-  estado: mapStatusToEstado(task.status),
-  prioridad: mapPriorityToDb(task.priority),
-  fecha_entrega: toDateOnly(task.dueDate),
-  fecha_creacion: task.createdAt,
-  fecha_ingreso: task.updatedAt,
-  operario_asignado: task.ownerId,
-  complejidad: mapImpactToComplejidad(task.impact),
-  sector: task.assignedSector,
+    descripcion: task.summary,
+    estado: mapStatusToEstado(task.status),
+    prioridad: mapPriorityToDb(task.priority),
+    fecha_entrega: toDateOnly(task.dueDate),
+    fecha_creacion: task.createdAt,
+    fecha_ingreso: task.updatedAt,
+    operario_asignado: task.ownerId,
+    complejidad: mapImpactToComplejidad(task.impact),
+    sector: task.assignedSector,
     materiales: task.materials.join(', '),
     nombre_creador: task.createdBy,
     foto_url: task.photoUrl,
-    usuario_trabajando_nombre: task.workingUser ?? null
+    usuario_trabajando_nombre: task.workingUser ?? null,
+    telefono_cliente: task.clientPhone?.trim() || null,
+    email_cliente: task.clientEmail?.trim() || null,
+    direccion_cliente: task.clientAddress?.trim() || null,
+    whatsapp_link: task.whatsappUrl?.trim() || null,
+    ubicacion_link: task.locationUrl?.trim() || null,
+    drive_link: task.driveUrl?.trim() || null
   }
 }
 

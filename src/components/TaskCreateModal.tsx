@@ -43,6 +43,12 @@ const TaskCreateModal = ({
   const [opNumber, setOpNumber] = useState('')
   const [cliente, setCliente] = useState('')
   const [dniCuit, setDniCuit] = useState('')
+  const [telefonoCliente, setTelefonoCliente] = useState('')
+  const [emailCliente, setEmailCliente] = useState('')
+  const [direccionCliente, setDireccionCliente] = useState('')
+  const [whatsappUrl, setWhatsappUrl] = useState('')
+  const [ubicacionUrl, setUbicacionUrl] = useState('')
+  const [driveUrl, setDriveUrl] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [horaEstimada, setHoraEstimada] = useState('')
   const [selectedSector, setSelectedSector] = useState<string>('')
@@ -111,7 +117,13 @@ const TaskCreateModal = ({
       createdAt: new Date().toISOString(),
       dueDate,
       updatedAt: new Date().toISOString(),
-      impact: 'media'
+      impact: 'media',
+      clientPhone: telefonoCliente.trim() || undefined,
+      clientEmail: emailCliente.trim() || undefined,
+      clientAddress: direccionCliente.trim() || undefined,
+      whatsappUrl: whatsappUrl.trim() || undefined,
+      locationUrl: ubicacionUrl.trim() || undefined,
+      driveUrl: driveUrl.trim() || undefined
     }
 
     onCreate(newTask)
@@ -266,6 +278,69 @@ const TaskCreateModal = ({
               />
             </div>
           </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Teléfono cliente (opcional)</label>
+            <input
+              type="text"
+              value={telefonoCliente}
+              onChange={(e) => setTelefonoCliente(e.target.value)}
+              placeholder="+54 9 11 ..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Email cliente (opcional)</label>
+            <input
+              type="email"
+              value={emailCliente}
+              onChange={(e) => setEmailCliente(e.target.value)}
+              placeholder="cliente@correo.com"
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Dirección cliente (opcional)</label>
+            <input
+              type="text"
+              value={direccionCliente}
+              onChange={(e) => setDireccionCliente(e.target.value)}
+              placeholder="Calle, número, ciudad..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Link de ubicación (Google Maps) (opcional)</label>
+            <input
+              type="url"
+              value={ubicacionUrl}
+              onChange={(e) => setUbicacionUrl(e.target.value)}
+              placeholder="https://maps.google.com/..."
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Link de WhatsApp (opcional)</label>
+            <input
+              type="url"
+              value={whatsappUrl}
+              onChange={(e) => setWhatsappUrl(e.target.value)}
+              placeholder="https://wa.me/..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Link de Drive (opcional)</label>
+            <input
+              type="url"
+              value={driveUrl}
+              onChange={(e) => setDriveUrl(e.target.value)}
+              placeholder="https://drive.google.com/..."
+            />
+          </div>
+        </div>
 
           <div className="form-row">
             <div className="form-group">

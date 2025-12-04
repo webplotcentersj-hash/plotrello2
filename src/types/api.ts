@@ -16,6 +16,12 @@ export interface OrdenTrabajo {
   nombre_creador?: string | null
   foto_url?: string | null
   usuario_trabajando_nombre?: string | null
+  telefono_cliente?: string | null
+  email_cliente?: string | null
+  direccion_cliente?: string | null
+  whatsapp_link?: string | null
+  ubicacion_link?: string | null
+  drive_link?: string | null
 }
 
 export type UserRole =

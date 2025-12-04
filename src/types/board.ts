@@ -40,6 +40,12 @@ export interface Task {
   dueDate: string
   updatedAt: string
   impact: 'alta' | 'media' | 'low'
+  clientPhone?: string
+  clientEmail?: string
+  clientAddress?: string
+  whatsappUrl?: string
+  locationUrl?: string
+  driveUrl?: string
 }
 
 export interface ActivityEvent {
