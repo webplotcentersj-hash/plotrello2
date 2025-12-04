@@ -729,3 +729,113 @@
   cursor: not-allowed;
 }
 
+/* Menciones en mensajes */
+.message-text .mention {
+  background: rgba(235, 103, 27, 0.2);
+  color: #eb671b;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.message-text .mention:hover {
+  background: rgba(235, 103, 27, 0.3);
+  transform: scale(1.05);
+}
+
+.message-text .mention.mention-self {
+  background: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  animation: mention-pulse 2s ease-in-out infinite;
+}
+
+.message-text .mention.mention-valid {
+  border: 1px solid rgba(235, 103, 27, 0.4);
+}
+
+@keyframes mention-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Autocompletado de menciones */
+.input-container {
+  flex: 1;
+  position: relative;
+}
+
+.mention-suggestions {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(5, 6, 15, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.mention-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.mention-suggestion-item:hover,
+.mention-suggestion-item:focus {
+  background: rgba(235, 103, 27, 0.15);
+  outline: none;
+}
+
+.mention-suggestion-item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.mention-suggestion-item:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.mention-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(235, 103, 27, 0.3), rgba(235, 103, 27, 0.15));
+  border: 1px solid rgba(235, 103, 27, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.mention-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.mention-role {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
