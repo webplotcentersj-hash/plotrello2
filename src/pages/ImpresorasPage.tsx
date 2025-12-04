@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   Bar,
   BarChart,
-  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -30,7 +29,7 @@ type ImpresoraOcupacion = {
 
 const ImpresorasPage = () => {
   const navigate = useNavigate()
-  const { usuario, loading: authLoading } = useAuth()
+  const { loading: authLoading } = useAuth()
   const [impresoras, setImpresoras] = useState<ImpresoraOcupacion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
