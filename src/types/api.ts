@@ -11,7 +11,9 @@ export interface OrdenTrabajo {
   fecha_ingreso?: string | null
   operario_asignado?: string | null
   complejidad?: string | null
-  sector?: string | null
+  sector?: string | null // Sector único (para compatibilidad)
+  sectores?: string[] | null // Array de sectores requeridos
+  sector_inicial?: string | null // Sector donde aparece la ficha principal
   materiales?: string | null
   nombre_creador?: string | null
   foto_url?: string | null
@@ -93,5 +95,14 @@ export interface Notification {
   orden_id: number | null
   is_read: boolean
   timestamp: string
+}
+
+export interface TareaRecord {
+  id: number
+  id_orden: number
+  descripcion_tarea: string
+  estado_kanban: 'Pendiente' | 'En Proceso' | 'Finalizado'
+  sector?: string | null
+  es_sub_tarea?: boolean
 }
 

@@ -170,9 +170,12 @@ class ApiService {
       // Capturar supabase en variable local para TypeScript
       const supabaseClient = supabase
       
-      // SOLUCIÓN DIRECTA: Si hay campos de contacto, usar función SQL que evita schema cache
-      if (orden.telefono_cliente || orden.direccion_cliente || orden.drive_link || 
-          orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link) {
+      // SOLUCIÓN DIRECTA: Si hay campos de contacto o sectores múltiples, usar función SQL que evita schema cache
+      const hasContactFields = orden.telefono_cliente || orden.direccion_cliente || orden.drive_link || 
+          orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link
+      const hasMultipleSectors = orden.sectores && orden.sectores.length > 0
+      
+      if (hasContactFields || hasMultipleSectors) {
         try {
           console.log('🔄 Usando función SQL para crear orden (evita schema cache)')
           const { data, error } = await supabaseClient.rpc('create_orden_with_contact', {
@@ -184,7 +187,9 @@ class ApiService {
             p_fecha_entrega: orden.fecha_entrega || new Date().toISOString().split('T')[0],
             p_operario_asignado: orden.operario_asignado || null,
             p_complejidad: orden.complejidad || 'Media',
-            p_sector: orden.sector || 'Diseño Gráfico',
+            p_sector: orden.sector_inicial || orden.sector || 'Diseño Gráfico',
+            p_sectores: orden.sectores && orden.sectores.length > 0 ? orden.sectores : null,
+            p_sector_inicial: orden.sector_inicial || orden.sector || null,
             p_materiales: orden.materiales || null,
             p_nombre_creador: orden.nombre_creador || null,
             p_telefono_cliente: orden.telefono_cliente || null,
@@ -223,6 +228,21 @@ class ApiService {
       
       // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
+      
+      // Asegurar que sectores sea un array válido
+      if (ordenToInsert.sectores && ordenToInsert.sectores.length > 0) {
+        ordenToInsert.sectores = ordenToInsert.sectores
+      } else if (ordenToInsert.sector) {
+        // Si no hay sectores múltiples, usar el sector único como array
+        ordenToInsert.sectores = [ordenToInsert.sector]
+      } else {
+        ordenToInsert.sectores = null
+      }
+      
+      // Asegurar que sector_inicial esté definido
+      if (!ordenToInsert.sector_inicial && ordenToInsert.sector) {
+        ordenToInsert.sector_inicial = ordenToInsert.sector
+      }
       
       // Solo eliminar foto_url si está vacío, null o undefined (pero NUNCA eliminarlo si tiene valor)
       if (ordenToInsert.foto_url && ordenToInsert.foto_url.trim() !== '') {

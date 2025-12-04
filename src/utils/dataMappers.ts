@@ -121,7 +121,10 @@ export const ordenToTask = (orden: OrdenTrabajo): Task => {
     materials: orden.materiales
       ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)
       : [],
-    assignedSector: orden.sector ?? 'Sin sector',
+    assignedSector: orden.sector_inicial ?? orden.sector ?? 'Sin sector',
+    sectores: orden.sectores && orden.sectores.length > 0 ? orden.sectores : (orden.sector ? [orden.sector] : []),
+    sectorInicial: orden.sector_inicial ?? orden.sector ?? undefined,
+    esSubTarea: false, // Las órdenes principales no son sub-tareas
     photoUrl: orden.foto_url?.trim() || '',
     storyPoints: 0,
     progress: orden.estado?.toLowerCase().includes('finalizado') ? 100 : 50,
@@ -175,7 +178,9 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
     fecha_ingreso: task.updatedAt,
     operario_asignado: task.ownerId,
     complejidad: mapImpactToComplejidad(task.impact),
-    sector: task.assignedSector,
+    sector: task.sectorInicial ?? task.assignedSector, // Usar sectorInicial si existe
+    sectores: task.sectores && task.sectores.length > 0 ? task.sectores : (task.assignedSector ? [task.assignedSector] : null),
+    sector_inicial: task.sectorInicial ?? task.assignedSector ?? null,
     materiales: task.materials.join(', '),
     nombre_creador: task.createdBy,
     foto_url: task.photoUrl?.trim() || null,

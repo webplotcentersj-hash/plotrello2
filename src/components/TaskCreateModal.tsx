@@ -50,7 +50,8 @@ const TaskCreateModal = ({
   const [driveUrl, setDriveUrl] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [horaEstimada, setHoraEstimada] = useState('')
-  const [selectedSector, setSelectedSector] = useState<string>('')
+  const [selectedSectores, setSelectedSectores] = useState<string[]>([])
+  const [sectorInicial, setSectorInicial] = useState<string>('')
   const [sectorSearch, setSectorSearch] = useState('')
   const [operario, setOperario] = useState<string>('')
   const [complejidad, setComplejidad] = useState<string>('Media')
@@ -66,10 +67,13 @@ const TaskCreateModal = ({
   const attachmentsRef = useRef<LocalAttachment[]>([])
 
   useEffect(() => {
-    if (!selectedSector && sectores.length > 0) {
-      setSelectedSector(sectores[0].nombre)
+    // Si no hay sectores seleccionados y hay sectores disponibles, seleccionar el primero
+    if (selectedSectores.length === 0 && sectores.length > 0) {
+      const primerSector = sectores[0].nombre
+      setSelectedSectores([primerSector])
+      setSectorInicial(primerSector)
     }
-  }, [sectores, selectedSector])
+  }, [sectores, selectedSectores])
 
   useEffect(() => {
     if (!operario && teamMembers.length > 0) {
@@ -80,8 +84,13 @@ const TaskCreateModal = ({
   const hasPendingUploads = attachments.some((attachment) => attachment.uploading)
 
   const handleCreate = () => {
-    if (!opNumber || !cliente || !selectedSector) {
-      alert('Por favor completa los campos obligatorios: N° OP, Cliente y Sector')
+    if (!opNumber || !cliente || selectedSectores.length === 0) {
+      alert('Por favor completa los campos obligatorios: N° OP, Cliente y al menos un Sector')
+      return
+    }
+
+    if (!sectorInicial || !selectedSectores.includes(sectorInicial)) {
+      alert('Por favor selecciona un sector inicial de los sectores seleccionados')
       return
     }
 
@@ -98,18 +107,36 @@ const TaskCreateModal = ({
 
     const creatorName = stripEmailDomain(usuario?.nombre) ?? usuario?.nombre ?? 'Usuario'
 
+    // Mapear sector inicial al status correspondiente
+    const mapSectorToStatus = (sector: string): TaskStatus => {
+      const sectorMap: Record<string, TaskStatus> = {
+        'Diseño Gráfico': 'diseno-grafico',
+        'Taller de Imprenta': 'taller-imprenta',
+        'Taller Gráfico': 'taller-grafico',
+        'Instalaciones': 'instalaciones',
+        'Metalúrgica': 'metalurgica',
+        'Imprenta (Área de Impresión)': 'imprenta',
+        'Mostrador': 'diseno-grafico', // Default
+        'Caja': 'diseno-grafico' // Default
+      }
+      return sectorMap[sector] || 'diseno-grafico'
+    }
+
     const newTask: Omit<Task, 'id'> = {
       opNumber,
       title: cliente,
       dniCuit: dniCuit.trim() || undefined,
       summary: descripcion || 'Sin descripción.',
-      status: 'diseno-grafico' as TaskStatus,
+      status: mapSectorToStatus(sectorInicial),
       priority: (prioridad.toLowerCase() === 'normal' ? 'media' : prioridad.toLowerCase()) as any,
       ownerId: operario || teamMembers[0]?.id || '',
       createdBy: creatorName,
       tags: [],
       materials: materials.map((m) => m.name),
-      assignedSector: selectedSector,
+      assignedSector: sectorInicial, // Para compatibilidad
+      sectores: selectedSectores, // Array de sectores requeridos
+      sectorInicial: sectorInicial, // Sector donde aparece la ficha principal
+      esSubTarea: false, // Es ficha principal
       photoUrl: photoUrl || '',
       storyPoints: 0,
       progress: 0,
@@ -154,8 +181,24 @@ const TaskCreateModal = ({
     setMaterials(materials.filter((_, i) => i !== index))
   }
 
-  const handleAddSector = (sector: string) => {
-    setSelectedSector(sector)
+  const handleToggleSector = (sector: string) => {
+    if (selectedSectores.includes(sector)) {
+      // Remover sector
+      const newSectores = selectedSectores.filter((s) => s !== sector)
+      setSelectedSectores(newSectores)
+      // Si el sector removido era el inicial, cambiar el inicial al primero disponible
+      if (sectorInicial === sector) {
+        setSectorInicial(newSectores.length > 0 ? newSectores[0] : '')
+      }
+    } else {
+      // Agregar sector
+      const newSectores = [...selectedSectores, sector]
+      setSelectedSectores(newSectores)
+      // Si no hay sector inicial, usar este como inicial
+      if (!sectorInicial) {
+        setSectorInicial(sector)
+      }
+    }
     setSectorSearch('')
     setIsSectorDropdownOpen(false)
   }
@@ -231,7 +274,6 @@ const TaskCreateModal = ({
 
   const normalizedSectorQuery = sectorSearch.trim().toLowerCase()
   const filteredSectors = sectores
-    .filter((sector) => sector.nombre !== selectedSector)
     .filter((sector) =>
       normalizedSectorQuery ? sector.nombre.toLowerCase().includes(normalizedSectorQuery) : true
     )
@@ -367,47 +409,82 @@ const TaskCreateModal = ({
           </div>
 
           <div className="form-group">
-            <label>Sectores</label>
+            <label>Sectores requeridos (múltiple selección)</label>
             <input
               type="text"
-              placeholder="Buscar o seleccionar sector..."
+              placeholder="Buscar sectores..."
               value={sectorSearch}
               onChange={(e) => setSectorSearch(e.target.value)}
               onFocus={() => setIsSectorDropdownOpen(true)}
               onBlur={() => setTimeout(() => setIsSectorDropdownOpen(false), 120)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && filteredSectors.length > 0) {
-                  handleAddSector(filteredSectors[0].nombre)
-                }
-              }}
             />
             {isSectorDropdownOpen && filteredSectors.length > 0 && (
               <div className="dropdown-list">
-                {filteredSectors.map((sector) => (
-                  <div
-                    key={sector.id}
-                    className="dropdown-item"
-                    onMouseDown={(event) => {
-                      event.preventDefault()
-                      handleAddSector(sector.nombre)
-                    }}
-                  >
-                    {sector.nombre}
-                  </div>
+                {filteredSectors.map((sector) => {
+                  const isSelected = selectedSectores.includes(sector.nombre)
+                  return (
+                    <div
+                      key={sector.id}
+                      className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                      onMouseDown={(event) => {
+                        event.preventDefault()
+                        handleToggleSector(sector.nombre)
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        style={{ marginRight: '8px' }}
+                      />
+                      {sector.nombre}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {selectedSectores.length > 0 && (
+              <div className="selected-tags" style={{ marginTop: '8px' }}>
+                {selectedSectores.map((sector) => (
+                  <span key={sector} className="tag selected">
+                    {sector}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newSectores = selectedSectores.filter((s) => s !== sector)
+                        setSelectedSectores(newSectores)
+                        if (sectorInicial === sector) {
+                          setSectorInicial(newSectores.length > 0 ? newSectores[0] : '')
+                        }
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
                 ))}
               </div>
             )}
-            {selectedSector && (
-              <div className="selected-tags">
-                <span className="tag selected">
-                  {selectedSector}
-                  <button type="button" onClick={() => setSelectedSector('')}>
-                    ×
-                  </button>
-                </span>
-              </div>
-            )}
           </div>
+
+          {selectedSectores.length > 0 && (
+            <div className="form-group">
+              <label>Sector inicial (dónde aparece la ficha principal)</label>
+              <select
+                value={sectorInicial}
+                onChange={(e) => setSectorInicial(e.target.value)}
+                style={{ width: '100%', padding: '8px', borderRadius: '6px' }}
+              >
+                {selectedSectores.map((sector) => (
+                  <option key={sector} value={sector}>
+                    {sector}
+                  </option>
+                ))}
+              </select>
+              <small style={{ color: '#999', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                La ficha principal aparecerá en la columna de este sector
+              </small>
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">

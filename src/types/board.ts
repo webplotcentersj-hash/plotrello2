@@ -32,7 +32,11 @@ export interface Task {
   workingUser?: string
   tags: string[]
   materials: string[]
-  assignedSector: string
+  assignedSector: string // Sector actual (para compatibilidad)
+  sectores?: string[] // Array de sectores requeridos
+  sectorInicial?: string // Sector donde aparece la ficha principal
+  esSubTarea?: boolean // Indica si es una sub-tarea
+  idFichaPrincipal?: string // ID de la ficha principal (si es sub-tarea)
   photoUrl: string
   storyPoints: number
   progress: number
