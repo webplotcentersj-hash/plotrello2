@@ -215,30 +215,45 @@ class ApiService {
       
       console.log('📤 Creando orden con dni_cuit:', ordenToInsert.dni_cuit, 'Payload completo:', ordenToInsert)
       
-      const { data, error } = await supabase
-        .from('ordenes_trabajo')
-        .insert(ordenToInsert)
-        .select()
-        .single()
+      const performInsert = async (payload: Partial<OrdenTrabajo>) => {
+        return supabase.from('ordenes_trabajo').insert(payload).select().single()
+      }
+
+      let { data, error } = await performInsert(ordenToInsert)
 
       if (error) {
-        // Si el error es por foto_url, intentar sin esa columna
-        if (error.message.includes('foto_url')) {
-          console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
-          const ordenWithoutFoto = { ...ordenToInsert }
-          delete ordenWithoutFoto.foto_url
-          
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('ordenes_trabajo')
-            .insert(ordenWithoutFoto)
-            .select()
-            .single()
-          
-          if (fallbackError) return { success: false, error: fallbackError.message }
-          return { success: true, data: { ...fallbackData, foto_url: null } as OrdenTrabajo }
+        const optionalColumns = [
+          'foto_url',
+          'telefono_cliente',
+          'email_cliente',
+          'direccion_cliente',
+          'whatsapp_link',
+          'ubicacion_link',
+          'drive_link'
+        ]
+
+        // Si el error es por columnas opcionales nuevas, intentar sin ellas
+        if (optionalColumns.some((col) => error.message.includes(col))) {
+          console.warn(
+            '⚠️ Algunas columnas opcionales (foto_url / datos de contacto) no existen aún en esta base. Ejecuta los parches SQL si quieres usarlas.'
+          )
+          const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToInsert }
+          optionalColumns.forEach((col) => {
+            // @ts-expect-error index access
+            delete sanitizedPayload[col]
+          })
+
+          const fallback = await performInsert(sanitizedPayload)
+          if (fallback.error) {
+            return { success: false, error: fallback.error.message }
+          }
+
+          return { success: true, data: fallback.data as OrdenTrabajo }
         }
+
         return { success: false, error: error.message }
       }
+
       return { success: true, data: data as OrdenTrabajo }
     }
 
@@ -269,34 +284,58 @@ class ApiService {
         ordenToUpdate.dni_cuit = null
       }
       
-      console.log('📤 Actualizando orden', id, 'con dni_cuit:', ordenToUpdate.dni_cuit, 'Payload completo:', ordenToUpdate)
-      
-      const { data, error } = await supabase
-        .from('ordenes_trabajo')
-        .update(ordenToUpdate)
-        .eq('id', id)
-        .select()
-        .single()
+      console.log(
+        '📤 Actualizando orden',
+        id,
+        'con dni_cuit:',
+        ordenToUpdate.dni_cuit,
+        'Payload completo:',
+        ordenToUpdate
+      )
+
+      const performUpdate = async (payload: Partial<OrdenTrabajo>) => {
+        return supabase
+          .from('ordenes_trabajo')
+          .update(payload)
+          .eq('id', id)
+          .select()
+          .single()
+      }
+
+      let { data, error } = await performUpdate(ordenToUpdate)
 
       if (error) {
-        // Si el error es por foto_url, intentar sin esa columna
-        if (error.message.includes('foto_url')) {
-          console.warn('⚠️ Columna foto_url no encontrada. Ejecuta el parche SQL: supabase/patches/2024-11-21_add_foto_url.sql')
-          const ordenWithoutFoto = { ...ordenToUpdate }
-          delete ordenWithoutFoto.foto_url
-          
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('ordenes_trabajo')
-            .update(ordenWithoutFoto)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (fallbackError) return { success: false, error: fallbackError.message }
-          return { success: true, data: { ...fallbackData, foto_url: null } as OrdenTrabajo }
+        const optionalColumns = [
+          'foto_url',
+          'telefono_cliente',
+          'email_cliente',
+          'direccion_cliente',
+          'whatsapp_link',
+          'ubicacion_link',
+          'drive_link'
+        ]
+
+        if (optionalColumns.some((col) => error.message.includes(col))) {
+          console.warn(
+            '⚠️ Algunas columnas opcionales (foto_url / datos de contacto) no existen aún en esta base. Ejecuta los parches SQL si quieres usarlas.'
+          )
+          const sanitizedPayload: Partial<OrdenTrabajo> = { ...ordenToUpdate }
+          optionalColumns.forEach((col) => {
+            // @ts-expect-error index access
+            delete sanitizedPayload[col]
+          })
+
+          const fallback = await performUpdate(sanitizedPayload)
+          if (fallback.error) {
+            return { success: false, error: fallback.error.message }
+          }
+
+          return { success: true, data: fallback.data as OrdenTrabajo }
         }
+
         return { success: false, error: error.message }
       }
+
       return { success: true, data: data as OrdenTrabajo }
     }
 

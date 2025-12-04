@@ -88,7 +88,7 @@ const TaskEditModal = ({
         clientPhone: task.clientPhone,
         clientEmail: task.clientEmail,
         clientAddress: task.clientAddress,
-        whatsappUrl: task.whatsappUrl,
+        // whatsappUrl se recalcula automáticamente a partir del teléfono al guardar
         locationUrl: task.locationUrl,
         driveUrl: task.driveUrl
       })
@@ -530,15 +530,6 @@ const TaskEditModal = ({
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label>Link de WhatsApp (opcional)</label>
-              <input
-                type="url"
-                value={formData.whatsappUrl || ''}
-                onChange={(e) => setFormData({ ...formData, whatsappUrl: e.target.value })}
-                placeholder="https://wa.me/..."
-              />
-            </div>
             <div className="form-group">
               <label>Link de Drive (opcional)</label>
               <input

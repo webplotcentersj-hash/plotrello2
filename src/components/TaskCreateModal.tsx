@@ -46,7 +46,6 @@ const TaskCreateModal = ({
   const [telefonoCliente, setTelefonoCliente] = useState('')
   const [emailCliente, setEmailCliente] = useState('')
   const [direccionCliente, setDireccionCliente] = useState('')
-  const [whatsappUrl, setWhatsappUrl] = useState('')
   const [ubicacionUrl, setUbicacionUrl] = useState('')
   const [driveUrl, setDriveUrl] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
@@ -121,7 +120,7 @@ const TaskCreateModal = ({
       clientPhone: telefonoCliente.trim() || undefined,
       clientEmail: emailCliente.trim() || undefined,
       clientAddress: direccionCliente.trim() || undefined,
-      whatsappUrl: whatsappUrl.trim() || undefined,
+      // El link de WhatsApp se genera automáticamente a partir del teléfono en el mapper
       locationUrl: ubicacionUrl.trim() || undefined,
       driveUrl: driveUrl.trim() || undefined
     }
@@ -322,15 +321,6 @@ const TaskCreateModal = ({
         </div>
 
         <div className="form-row">
-          <div className="form-group">
-            <label>Link de WhatsApp (opcional)</label>
-            <input
-              type="url"
-              value={whatsappUrl}
-              onChange={(e) => setWhatsappUrl(e.target.value)}
-              placeholder="https://wa.me/..."
-            />
-          </div>
           <div className="form-group">
             <label>Link de Drive (opcional)</label>
             <input

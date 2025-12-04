@@ -47,6 +47,24 @@ const COMPLEJIDAD_TO_IMPACT: Record<string, Task['impact']> = {
   baja: 'low'
 }
 
+const buildWhatsappLinkFromPhone = (phone?: string | null): string | undefined => {
+  if (!phone) return undefined
+  const digits = phone.replace(/\D/g, '')
+  if (!digits) return undefined
+
+  // Normalizar para Argentina: quitar 0 inicial, asegurar prefijo 54
+  let normalized = digits
+  if (normalized.startsWith('0')) {
+    normalized = normalized.slice(1)
+  }
+
+  if (!normalized.startsWith('54')) {
+    normalized = `54${normalized}`
+  }
+
+  return `https://wa.me/${normalized}`
+}
+
 export const mapStatusToEstado = (status: TaskStatus): string =>
   STATUS_TO_ESTADO[status] ?? status
 
@@ -68,36 +86,41 @@ export const mapComplejidadToImpact = (
   complejidad: string | null | undefined
 ): Task['impact'] => COMPLEJIDAD_TO_IMPACT[complejidad?.toLowerCase() ?? 'media'] ?? 'media'
 
-export const ordenToTask = (orden: OrdenTrabajo): Task => ({
-  id: orden.id?.toString() ?? crypto.randomUUID(),
-  opNumber: orden.numero_op,
-  title: orden.cliente,
-  dniCuit: orden.dni_cuit ?? undefined,
-  summary: orden.descripcion ?? 'Sin descripción',
-  status: mapEstadoToStatus(orden.estado),
-  priority: mapPriorityFromDb(orden.prioridad),
-  ownerId: orden.operario_asignado ?? 'sin-asignar',
-  createdBy: orden.nombre_creador ?? 'Sistema',
-  workingUser: orden.usuario_trabajando_nombre ?? undefined,
-  tags: [],
-  materials: orden.materiales
-    ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)
-    : [],
-  assignedSector: orden.sector ?? 'Sin sector',
-  photoUrl: orden.foto_url ?? '',
-  storyPoints: 0,
-  progress: orden.estado?.toLowerCase().includes('finalizado') ? 100 : 50,
-  createdAt: orden.fecha_creacion ?? new Date().toISOString(),
-  dueDate: orden.fecha_entrega ?? orden.fecha_creacion ?? new Date().toISOString(),
-  updatedAt: orden.fecha_ingreso ?? orden.fecha_creacion ?? new Date().toISOString(),
-  impact: mapComplejidadToImpact(orden.complejidad),
-  clientPhone: orden.telefono_cliente ?? undefined,
-  clientEmail: orden.email_cliente ?? undefined,
-  clientAddress: orden.direccion_cliente ?? undefined,
-  whatsappUrl: orden.whatsapp_link ?? undefined,
-  locationUrl: orden.ubicacion_link ?? undefined,
-  driveUrl: orden.drive_link ?? undefined
-})
+export const ordenToTask = (orden: OrdenTrabajo): Task => {
+  const clientPhone = orden.telefono_cliente ?? undefined
+  const whatsappUrl = orden.whatsapp_link ?? buildWhatsappLinkFromPhone(clientPhone)
+
+  return {
+    id: orden.id?.toString() ?? crypto.randomUUID(),
+    opNumber: orden.numero_op,
+    title: orden.cliente,
+    dniCuit: orden.dni_cuit ?? undefined,
+    summary: orden.descripcion ?? 'Sin descripción',
+    status: mapEstadoToStatus(orden.estado),
+    priority: mapPriorityFromDb(orden.prioridad),
+    ownerId: orden.operario_asignado ?? 'sin-asignar',
+    createdBy: orden.nombre_creador ?? 'Sistema',
+    workingUser: orden.usuario_trabajando_nombre ?? undefined,
+    tags: [],
+    materials: orden.materiales
+      ? orden.materiales.split(',').map((m) => m.trim()).filter(Boolean)
+      : [],
+    assignedSector: orden.sector ?? 'Sin sector',
+    photoUrl: orden.foto_url ?? '',
+    storyPoints: 0,
+    progress: orden.estado?.toLowerCase().includes('finalizado') ? 100 : 50,
+    createdAt: orden.fecha_creacion ?? new Date().toISOString(),
+    dueDate: orden.fecha_entrega ?? orden.fecha_creacion ?? new Date().toISOString(),
+    updatedAt: orden.fecha_ingreso ?? orden.fecha_creacion ?? new Date().toISOString(),
+    impact: mapComplejidadToImpact(orden.complejidad),
+    clientPhone,
+    clientEmail: orden.email_cliente ?? undefined,
+    clientAddress: orden.direccion_cliente ?? undefined,
+    whatsappUrl,
+    locationUrl: orden.ubicacion_link ?? undefined,
+    driveUrl: orden.drive_link ?? undefined
+  }
+}
 
 export const historialToActivity = (registro: HistorialMovimiento): ActivityEvent => ({
   id: registro.id.toString(),
@@ -119,7 +142,11 @@ const toDateOnly = (value?: string) => {
 export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<OrdenTrabajo> => {
   // Normalizar dniCuit: si es string vacío, convertir a null
   const dniCuitValue = task.dniCuit?.trim() || null
-  
+
+  const clientPhone = task.clientPhone?.trim() || null
+  const whatsappLink =
+    task.whatsappUrl?.trim() || buildWhatsappLinkFromPhone(clientPhone ?? undefined) || null
+
   return {
     numero_op: task.opNumber,
     cliente: task.title,
@@ -137,10 +164,10 @@ export const taskToOrdenPayload = (task: Omit<Task, 'id'> | Task): Partial<Orden
     nombre_creador: task.createdBy,
     foto_url: task.photoUrl,
     usuario_trabajando_nombre: task.workingUser ?? null,
-    telefono_cliente: task.clientPhone?.trim() || null,
+    telefono_cliente: clientPhone,
     email_cliente: task.clientEmail?.trim() || null,
     direccion_cliente: task.clientAddress?.trim() || null,
-    whatsapp_link: task.whatsappUrl?.trim() || null,
+    whatsapp_link: whatsappLink,
     ubicacion_link: task.locationUrl?.trim() || null,
     drive_link: task.driveUrl?.trim() || null
   }
