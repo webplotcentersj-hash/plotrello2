@@ -70,10 +70,15 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
   const [isShaking, setIsShaking] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [mentionSuggestions, setMentionSuggestions] = useState<TeamMember[]>([])
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false)
+  const [mentionStartIndex, setMentionStartIndex] = useState(-1)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
+  const mentionSuggestionsRef = useRef<HTMLDivElement>(null)
   const realtimeSubscriptionRef = useRef<any>(null)
   const currentUser = resolvedMembers[0]
 
@@ -287,7 +292,115 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
     }
   }
 
+  // Detectar menciones @usuario mientras se escribe
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setInput(value)
+    
+    // Auto-resize
+    e.target.style.height = 'auto'
+    e.target.style.height = `${e.target.scrollHeight}px`
+    
+    // Detectar @ para autocompletado
+    const cursorPosition = e.target.selectionStart || 0
+    const textBeforeCursor = value.substring(0, cursorPosition)
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+    
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
+      // Si no hay espacio después del @, mostrar sugerencias
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        const query = textAfterAt.toLowerCase()
+        setMentionQuery(query)
+        setMentionStartIndex(lastAtIndex)
+        
+        // Filtrar usuarios que coincidan
+        const filtered = resolvedMembers.filter(
+          (member) =>
+            member.name.toLowerCase().includes(query) &&
+            member.id !== currentUser.id
+        )
+        setMentionSuggestions(filtered.slice(0, 5))
+        setShowMentionSuggestions(filtered.length > 0)
+      } else {
+        setShowMentionSuggestions(false)
+      }
+    } else {
+      setShowMentionSuggestions(false)
+    }
+  }
+
+  // Insertar mención seleccionada
+  const insertMention = (member: TeamMember) => {
+    if (mentionStartIndex === -1) return
+    
+    const beforeMention = input.substring(0, mentionStartIndex + 1)
+    const afterMention = input.substring(mentionStartIndex + 1 + mentionQuery.length)
+    const newInput = `${beforeMention}${member.name} ${afterMention}`
+    
+    setInput(newInput)
+    setShowMentionSuggestions(false)
+    setMentionQuery('')
+    setMentionStartIndex(-1)
+    
+    // Enfocar el input y posicionar cursor
+    setTimeout(() => {
+      if (inputRef.current) {
+        const cursorPos = mentionStartIndex + 1 + member.name.length + 1
+        inputRef.current.focus()
+        inputRef.current.setSelectionRange(cursorPos, cursorPos)
+      }
+    }, 0)
+  }
+
+  // Renderizar mensaje con menciones resaltadas
+  const renderMessageWithMentions = (content: string) => {
+    const parts = content.split(/(@\w+)/g)
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        const username = part.substring(1)
+        const isMentioned = resolvedMembers.some(
+          (m) => m.name.toLowerCase() === username.toLowerCase()
+        )
+        const isCurrentUser = currentUser.name.toLowerCase() === username.toLowerCase()
+        
+        return (
+          <span
+            key={index}
+            className={`mention ${isCurrentUser ? 'mention-self' : ''} ${isMentioned ? 'mention-valid' : ''}`}
+          >
+            {part}
+          </span>
+        )
+      }
+      return <span key={index}>{part}</span>
+    })
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    // Si hay sugerencias de menciones abiertas
+    if (showMentionSuggestions && mentionSuggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        // TODO: Implementar navegación con flechas
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        // TODO: Implementar navegación con flechas
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        insertMention(mentionSuggestions[0])
+        return
+      }
+      if (e.key === 'Escape') {
+        setShowMentionSuggestions(false)
+        return
+      }
+    }
+    
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
@@ -622,7 +735,7 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
                         </div>
                       )}
                       <div className={`message-text ${message.type === 'buzz' ? 'buzz-text' : ''} ${message.type === 'alert' ? 'alert-text' : ''}`}>
-                        {message.content}
+                        {renderMessageWithMentions(message.content)}
                       </div>
                     </div>
                   </div>
@@ -645,19 +758,33 @@ const ChatPage = ({ onBack, teamMembers }: { onBack: () => void; teamMembers: Te
             </div>
           )}
           <div className="input-wrapper">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value)
-                e.target.style.height = 'auto'
-                e.target.style.height = `${e.target.scrollHeight}px`
-              }}
-              onKeyPress={handleKeyPress}
-              placeholder={`Mensaje en ${CHANNELS.find((c) => c.id === currentChannel)?.name}`}
-              rows={1}
-              className="chat-input"
-            />
+            <div className="input-container">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyPress}
+                placeholder={`Mensaje en ${CHANNELS.find((c) => c.id === currentChannel)?.name} (usa @ para mencionar)`}
+                rows={1}
+                className="chat-input"
+              />
+              {showMentionSuggestions && mentionSuggestions.length > 0 && (
+                <div className="mention-suggestions" ref={mentionSuggestionsRef}>
+                  {mentionSuggestions.map((member) => (
+                    <button
+                      key={member.id}
+                      className="mention-suggestion-item"
+                      onClick={() => insertMention(member)}
+                      type="button"
+                    >
+                      <span className="mention-avatar">{member.avatar}</span>
+                      <span className="mention-name">{member.name}</span>
+                      <span className="mention-role">{member.role}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="input-actions">
               <button
                 className="input-action-btn buzz-btn"
