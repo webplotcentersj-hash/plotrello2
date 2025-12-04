@@ -108,61 +108,30 @@ class ApiService {
   // ========== ORDENES DE TRABAJO ==========
   async getOrdenes(): Promise<ApiResponse<OrdenTrabajo[]>> {
     if (supabase) {
-      // Seleccionar columnas explícitamente para evitar errores si falta foto_url
+      // Usar select('*') para obtener todas las columnas disponibles automáticamente
       const { data, error } = await supabase
         .from('ordenes_trabajo')
-        .select(
-          'id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre, telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link'
-        )
+        .select('*')
         .order('fecha_creacion', { ascending: false })
 
       if (error) {
-        // Si el error es por columnas opcionales nuevas (datos de contacto), intentar sin ellas
-        const optionalColumns = [
-          'telefono_cliente',
-          'email_cliente',
-          'direccion_cliente',
-          'whatsapp_link',
-          'ubicacion_link',
-          'drive_link'
-        ]
-
-        if (optionalColumns.some((col) => error.message.includes(col))) {
-          console.warn(
-            '⚠️ Algunas columnas opcionales de datos de contacto no existen aún en esta base. Ejecuta el parche SQL 2024-11-24_add_contact_fields_to_ordenes.sql si quieres usarlas.'
-          )
-
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('ordenes_trabajo')
-            .select(
-              // Mantener foto_url aunque falten las columnas de contacto
-              'id, numero_op, cliente, dni_cuit, descripcion, estado, prioridad, fecha_creacion, fecha_entrega, fecha_ingreso, operario_asignado, complejidad, sector, materiales, nombre_creador, foto_url, usuario_trabajando_nombre'
-            )
-            .order('fecha_creacion', { ascending: false })
-          
-          if (fallbackError) {
-            console.error('Supabase getOrdenes error:', fallbackError)
-            return { success: false, error: fallbackError.message }
-          }
-          
-          // Agregar campos opcionales como null para cada orden
-          const dataWithOptional = (fallbackData || []).map((orden: any) => ({
-            ...orden,
-            telefono_cliente: null,
-            email_cliente: null,
-            direccion_cliente: null,
-            whatsapp_link: null,
-            ubicacion_link: null,
-            drive_link: null
-          }))
-          return { success: true, data: (dataWithOptional as OrdenTrabajo[]) ?? [] }
-        }
-        
         console.error('Supabase getOrdenes error:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: (data as OrdenTrabajo[]) ?? [] }
+      // Si hay datos, asegurarse de que los campos opcionales estén definidos (aunque sean null)
+      const normalizedData = (data || []).map((orden: any) => ({
+        ...orden,
+        foto_url: orden.foto_url || null,
+        telefono_cliente: orden.telefono_cliente || null,
+        email_cliente: orden.email_cliente || null,
+        direccion_cliente: orden.direccion_cliente || null,
+        whatsapp_link: orden.whatsapp_link || null,
+        ubicacion_link: orden.ubicacion_link || null,
+        drive_link: orden.drive_link || null
+      }))
+
+      return { success: true, data: normalizedData as OrdenTrabajo[] }
     }
 
     if (hasLegacyBackend) {
