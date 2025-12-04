@@ -872,6 +872,118 @@ class ApiService {
     return { success: false, error: 'Supabase no configurado' }
   }
 
+  // ========== IMPRESORAS ==========
+  async getImpresoras(): Promise<ApiResponse<any[]>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('impresoras')
+        .select('*')
+        .eq('activa', true)
+        .order('nombre', { ascending: true })
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as any[]) ?? [] }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async getImpresorasOcupacion(): Promise<ApiResponse<any[]>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('v_impresoras_ocupacion')
+        .select('*')
+        .order('nombre', { ascending: true })
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as any[]) ?? [] }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async getUsoImpresora(impresoraId: number, limit: number = 50): Promise<ApiResponse<any[]>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('impresora_uso')
+        .select(`
+          *,
+          ordenes_trabajo:id_orden(numero_op, cliente, descripcion)
+        `)
+        .eq('id_impresora', impresoraId)
+        .order('fecha_inicio', { ascending: false })
+        .limit(limit)
+
+      if (error) return { success: false, error: error.message }
+      return { success: true, data: (data as any[]) ?? [] }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async iniciarUsoImpresora(impresoraId: number, ordenId: number, operario?: string): Promise<ApiResponse<any>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('impresora_uso')
+        .insert({
+          id_impresora: impresoraId,
+          id_orden: ordenId,
+          estado: 'En Proceso',
+          operario: operario || null
+        })
+        .select()
+        .single()
+
+      if (error) return { success: false, error: error.message }
+      
+      // Actualizar estado de la impresora a "En Uso"
+      await supabase
+        .from('impresoras')
+        .update({ estado: 'En Uso' })
+        .eq('id', impresoraId)
+
+      return { success: true, data }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
+  async finalizarUsoImpresora(usoId: number, impresoraId: number): Promise<ApiResponse<any>> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('impresora_uso')
+        .update({
+          fecha_fin: new Date().toISOString(),
+          estado: 'Completado'
+        })
+        .eq('id', usoId)
+        .select()
+        .single()
+
+      if (error) return { success: false, error: error.message }
+      
+      // Verificar si hay otros usos activos para esta impresora
+      const { data: otrosUsos } = await supabase
+        .from('impresora_uso')
+        .select('id')
+        .eq('id_impresora', impresoraId)
+        .eq('estado', 'En Proceso')
+        .limit(1)
+
+      // Si no hay otros usos activos, cambiar estado a "Disponible"
+      if (!otrosUsos || otrosUsos.length === 0) {
+        await supabase
+          .from('impresoras')
+          .update({ estado: 'Disponible' })
+          .eq('id', impresoraId)
+      }
+
+      return { success: true, data }
+    }
+
+    return { success: false, error: 'Supabase no configurado' }
+  }
+
   // Método privado para asegurar que un chat_room existe
   private async ensureChatRoomExists(roomId: number, canalNombre: string): Promise<void> {
     if (!supabase) return

@@ -6,6 +6,7 @@ import ChatPage from './pages/ChatPage'
 import ClienteConsultaPage from './pages/ClienteConsultaPage'
 import UsuariosPage from './pages/UsuariosPage'
 import DashboardPantallasPage from './pages/DashboardPantallasPage'
+import ImpresorasPage from './pages/ImpresorasPage'
 import Login from './components/Login'
 import EnvDebug from './components/EnvDebug'
 import type { ActivityEvent, Task, TeamMember } from './types/board'
@@ -344,7 +345,44 @@ function AppRoutes({
   const navigate = useNavigate()
 
   return (
-    <Routes>
+    <>
+      {/* Botón flotante para acceder a impresoras */}
+      <button
+        className="floating-button"
+        onClick={() => navigate('/impresoras')}
+        title="Ver ocupación de impresoras"
+        style={{
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          border: 'none',
+          color: '#fff',
+          fontSize: '28px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease',
+          fontWeight: 'bold'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1)'
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.6)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)'
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)'
+        }}
+      >
+        🖨️
+      </button>
+      <Routes>
       <Route
         path="/"
         element={
@@ -389,7 +427,12 @@ function AppRoutes({
         path="/usuarios"
         element={<UsuariosPage onBack={() => navigate('/')} />}
       />
+      <Route
+        path="/impresoras"
+        element={<ImpresorasPage />}
+      />
     </Routes>
+    </>
   )
 }
 
