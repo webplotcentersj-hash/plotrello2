@@ -1,6 +1,7 @@
 import type { Ref } from 'react'
 import { type DroppableProvided } from '@hello-pangea/dnd'
 import type { ColumnConfig, Task, TeamMember } from '../types/board'
+import type { SectorRecord } from '../types/api'
 import TaskCard from './TaskCard'
 
 type ColumnProps = {
@@ -13,6 +14,7 @@ type ColumnProps = {
   containerRef: Ref<HTMLDivElement>
   onEditTask?: (task: Task) => void
   onDeleteTask?: (taskId: string) => void
+  sectores?: SectorRecord[]
 }
 
 const Column = ({
@@ -24,7 +26,8 @@ const Column = ({
   isActive,
   containerRef,
   onEditTask,
-  onDeleteTask
+  onDeleteTask,
+  sectores
 }: ColumnProps) => {
   return (
     <div className={`board-column ${isActive ? 'column-active' : ''}`} ref={containerRef}>
@@ -47,6 +50,7 @@ const Column = ({
             owner={members.find((member) => member.id === task.ownerId)}
             onEdit={onEditTask}
             onDelete={onDeleteTask}
+            sectores={sectores}
           />
         ))}
         {droppableProvided.placeholder}

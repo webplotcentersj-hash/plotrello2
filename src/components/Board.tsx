@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { DragDropContext, Droppable, type DropResult } from '@hello-pangea/dnd'
 import type { ColumnConfig, Task, TaskStatus, TeamMember } from '../types/board'
+import type { SectorRecord } from '../types/api'
 import Column from './Column'
 import './Board.css'
 
@@ -12,9 +13,10 @@ type BoardProps = {
   members: TeamMember[]
   onEditTask?: (task: Task) => void
   onDeleteTask?: (taskId: string) => void
+  sectores?: SectorRecord[]
 }
 
-const Board = ({ columns, tasks, allTasks, onMoveTask, members, onEditTask, onDeleteTask }: BoardProps) => {
+const Board = ({ columns, tasks, allTasks, onMoveTask, members, onEditTask, onDeleteTask, sectores }: BoardProps) => {
   const columnRefs = useRef<Record<TaskStatus, HTMLDivElement | null>>({
     'diseno-grafico': null,
     'diseno-proceso': null,
@@ -91,6 +93,7 @@ const Board = ({ columns, tasks, allTasks, onMoveTask, members, onEditTask, onDe
                   }}
                   onEditTask={onEditTask}
                   onDeleteTask={onDeleteTask}
+                  sectores={sectores}
                 />
               )}
             </Droppable>

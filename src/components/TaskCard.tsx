@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Draggable } from '@hello-pangea/dnd'
 import clsx from 'clsx'
 import type { Task, TeamMember } from '../types/board'
+import type { SectorRecord } from '../types/api'
 import './TaskCard.css'
 
 type TaskCardProps = {
@@ -10,6 +11,7 @@ type TaskCardProps = {
   owner?: TeamMember
   onEdit?: (task: Task) => void
   onDelete?: (taskId: string) => void
+  sectores?: SectorRecord[]
 }
 
 const formatShortDate = (value: string) =>
@@ -44,7 +46,7 @@ const stripEmailDomain = (value?: string | null) => {
   return atIndex > 0 ? trimmed.slice(0, atIndex) : trimmed
 }
 
-const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
+const TaskCard = ({ task, index, owner, onEdit, onDelete, sectores = [] }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const workerName =
     stripEmailDomain(task.workingUser) ?? stripEmailDomain(owner?.name) ?? owner?.name
@@ -54,6 +56,10 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
   
   // Detectar si hay modificaciones (updatedAt es más reciente que createdAt)
   const hasModifications = new Date(task.updatedAt).getTime() > new Date(task.createdAt).getTime() + 1000 // +1 segundo para evitar falsos positivos
+  
+  // Obtener el color del sector asignado
+  const sectorInfo = sectores.find((s) => s.nombre === task.assignedSector)
+  const sectorColor = sectorInfo?.color || '#6B7280'
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -69,6 +75,14 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
         >
           {task.priority === 'alta' && (
             <div className="priority-led-indicator" title="Prioridad Alta"></div>
+          )}
+          {/* Marquita del sector en esquina superior derecha */}
+          {task.assignedSector && (
+            <div 
+              className="sector-corner-marker" 
+              style={{ backgroundColor: sectorColor }}
+              title={task.assignedSector}
+            ></div>
           )}
           <div className="task-actions">
             {onEdit && (
@@ -107,6 +121,21 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
           )}
 
           <div className="task-meta">
+            {/* Sector asignado al principio */}
+            {task.assignedSector && (
+              <div className="task-sector-header">
+                <span 
+                  className="sector-pill-header" 
+                  style={{ 
+                    backgroundColor: `${sectorColor}20`,
+                    borderColor: `${sectorColor}60`,
+                    color: sectorColor
+                  }}
+                >
+                  {task.assignedSector}
+                </span>
+              </div>
+            )}
             <div className="task-op-line">
               <span className="task-op">#{task.opNumber}</span>
               <span className="task-date">{formatShortDate(task.dueDate)}</span>
@@ -248,7 +277,16 @@ const TaskCard = ({ task, index, owner, onEdit, onDelete }: TaskCardProps) => {
 
             <div className="task-sector">
               <span className="section-label">Sector asignado:</span>
-              <span className="sector-pill">{task.assignedSector}</span>
+              <span 
+                className="sector-pill" 
+                style={{ 
+                  backgroundColor: `${sectorColor}20`,
+                  borderColor: `${sectorColor}60`,
+                  color: sectorColor
+                }}
+              >
+                {task.assignedSector}
+              </span>
             </div>
 
             {task.tags.length > 0 && (

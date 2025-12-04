@@ -419,6 +419,7 @@ const BoardPage = ({
             members={teamMembers}
             onEditTask={handleEditTask}
             onDeleteTask={handleDeleteTask}
+            sectores={sectores}
           />
         </section>
 
