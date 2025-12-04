@@ -64,10 +64,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger para calcular horas automáticamente
+-- Primero eliminar el trigger si ya existiera, para evitar error 42710
+DROP TRIGGER IF EXISTS trigger_calcular_horas_uso ON public.impresora_uso;
+
 CREATE TRIGGER trigger_calcular_horas_uso
-  BEFORE INSERT OR UPDATE ON public.impresora_uso
-  FOR EACH ROW
-  EXECUTE FUNCTION public.calcular_horas_uso();
+BEFORE INSERT OR UPDATE ON public.impresora_uso
+FOR EACH ROW
+EXECUTE FUNCTION public.calcular_horas_uso();
 
 -- Vista para calcular ocupación de impresoras basada en órdenes de Taller Gráfico
 -- Solo crear la vista si las tablas necesarias existen
