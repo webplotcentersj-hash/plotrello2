@@ -76,12 +76,26 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trigger_notify_estado_change ON public.ordenes_trabajo;
-CREATE TRIGGER trigger_notify_estado_change
-  AFTER UPDATE ON public.ordenes_trabajo
-  FOR EACH ROW
-  WHEN (OLD.estado IS DISTINCT FROM NEW.estado)
-  EXECUTE FUNCTION public.notify_estado_change();
+-- Crear triggers solo si la tabla ordenes_trabajo existe
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'ordenes_trabajo'
+  ) THEN
+    DROP TRIGGER IF EXISTS trigger_notify_estado_change ON public.ordenes_trabajo;
+    CREATE TRIGGER trigger_notify_estado_change
+      AFTER UPDATE ON public.ordenes_trabajo
+      FOR EACH ROW
+      WHEN (OLD.estado IS DISTINCT FROM NEW.estado)
+      EXECUTE FUNCTION public.notify_estado_change();
+    
+    RAISE NOTICE '✅ Trigger de cambio de estado creado';
+  ELSE
+    RAISE NOTICE 'ℹ️ Tabla ordenes_trabajo no existe, saltando triggers';
+  END IF;
+END $$;
 
 -- ============================================
 -- TRIGGER 2: Notificación cuando se asigna un operario
@@ -117,13 +131,24 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trigger_notify_operario_assignment ON public.ordenes_trabajo;
-CREATE TRIGGER trigger_notify_operario_assignment
-  AFTER UPDATE ON public.ordenes_trabajo
-  FOR EACH ROW
-  WHEN ((OLD.operario_asignado IS NULL OR OLD.operario_asignado != NEW.operario_asignado) 
-        AND NEW.operario_asignado IS NOT NULL)
-  EXECUTE FUNCTION public.notify_operario_assignment();
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'ordenes_trabajo'
+  ) THEN
+    DROP TRIGGER IF EXISTS trigger_notify_operario_assignment ON public.ordenes_trabajo;
+    CREATE TRIGGER trigger_notify_operario_assignment
+      AFTER UPDATE ON public.ordenes_trabajo
+      FOR EACH ROW
+      WHEN ((OLD.operario_asignado IS NULL OR OLD.operario_asignado != NEW.operario_asignado) 
+            AND NEW.operario_asignado IS NOT NULL)
+      EXECUTE FUNCTION public.notify_operario_assignment();
+    
+    RAISE NOTICE '✅ Trigger de asignación de operario creado';
+  END IF;
+END $$;
 
 -- ============================================
 -- TRIGGER 3: Notificación cuando se crea una nueva orden
@@ -158,11 +183,22 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trigger_notify_new_orden ON public.ordenes_trabajo;
-CREATE TRIGGER trigger_notify_new_orden
-  AFTER INSERT ON public.ordenes_trabajo
-  FOR EACH ROW
-  EXECUTE FUNCTION public.notify_new_orden();
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'ordenes_trabajo'
+  ) THEN
+    DROP TRIGGER IF EXISTS trigger_notify_new_orden ON public.ordenes_trabajo;
+    CREATE TRIGGER trigger_notify_new_orden
+      AFTER INSERT ON public.ordenes_trabajo
+      FOR EACH ROW
+      EXECUTE FUNCTION public.notify_new_orden();
+    
+    RAISE NOTICE '✅ Trigger de nueva orden creado';
+  END IF;
+END $$;
 
 -- ============================================
 -- TRIGGER 4: Notificación cuando se agrega un comentario
@@ -256,11 +292,25 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trigger_notify_new_comment ON public.comentarios_orden;
-CREATE TRIGGER trigger_notify_new_comment
-  AFTER INSERT ON public.comentarios_orden
-  FOR EACH ROW
-  EXECUTE FUNCTION public.notify_new_comment();
+-- Crear trigger de comentarios solo si la tabla existe
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'comentarios_orden'
+  ) THEN
+    DROP TRIGGER IF EXISTS trigger_notify_new_comment ON public.comentarios_orden;
+    CREATE TRIGGER trigger_notify_new_comment
+      AFTER INSERT ON public.comentarios_orden
+      FOR EACH ROW
+      EXECUTE FUNCTION public.notify_new_comment();
+    
+    RAISE NOTICE '✅ Trigger de comentarios creado';
+  ELSE
+    RAISE NOTICE 'ℹ️ Tabla comentarios_orden no existe, saltando trigger de comentarios';
+  END IF;
+END $$;
 
 -- ============================================
 -- TRIGGER 5: Notificación cuando una orden está cerca del plazo
