@@ -154,7 +154,10 @@ BEGIN
 END;
 $$;
 
-RAISE NOTICE '✅ Función get_user_id_from_nombre creada/actualizada';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Función get_user_id_from_nombre creada/actualizada';
+END $$;
 
 -- ============================================
 -- PASO 4: Crear función notify_estado_change
@@ -410,7 +413,10 @@ CREATE TRIGGER trigger_notify_estado_change
   WHEN (OLD.estado IS DISTINCT FROM NEW.estado)
   EXECUTE FUNCTION public.notify_estado_change();
 
-RAISE NOTICE '✅ Trigger trigger_notify_estado_change creado';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Trigger trigger_notify_estado_change creado';
+END $$;
 
 -- Trigger de asignación de operario
 DROP TRIGGER IF EXISTS trigger_notify_operario_assignment ON public.ordenes_trabajo;
@@ -421,7 +427,10 @@ CREATE TRIGGER trigger_notify_operario_assignment
         AND NEW.operario_asignado IS NOT NULL)
   EXECUTE FUNCTION public.notify_operario_assignment();
 
-RAISE NOTICE '✅ Trigger trigger_notify_operario_assignment creado';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Trigger trigger_notify_operario_assignment creado';
+END $$;
 
 -- Trigger de nueva orden
 DROP TRIGGER IF EXISTS trigger_notify_new_orden ON public.ordenes_trabajo;
@@ -430,7 +439,10 @@ CREATE TRIGGER trigger_notify_new_orden
   FOR EACH ROW
   EXECUTE FUNCTION public.notify_new_orden();
 
-RAISE NOTICE '✅ Trigger trigger_notify_new_orden creado';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Trigger trigger_notify_new_orden creado';
+END $$;
 
 -- Trigger de comentarios (solo si la tabla existe)
 DO $$
