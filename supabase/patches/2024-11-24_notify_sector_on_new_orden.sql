@@ -20,7 +20,7 @@ BEGIN
       AND table_name = 'usuario_sectores'
   ) THEN
     RETURN QUERY
-    SELECT DISTINCT u.id, u.nombre
+    SELECT DISTINCT u.id AS user_id, u.nombre AS user_nombre
     FROM public.usuarios u
     INNER JOIN public.usuario_sectores us ON u.id = us.usuario_id
     INNER JOIN public.sectores s ON us.sector_id = s.id
@@ -29,7 +29,7 @@ BEGIN
   ELSE
     -- Fallback: mapeo de sectores a roles
     RETURN QUERY
-    SELECT u.id, u.nombre
+    SELECT u.id AS user_id, u.nombre AS user_nombre
     FROM public.usuarios u
     WHERE 
       -- Mapeo de sectores a roles
@@ -99,8 +99,8 @@ BEGIN
     BEGIN
       -- Verificar si ya fue notificado como parte del sector
       SELECT EXISTS (
-        SELECT 1 FROM public.get_users_by_sector(NEW.sector)
-        WHERE user_nombre = NEW.operario_asignado
+        SELECT 1 FROM public.get_users_by_sector(NEW.sector) g
+        WHERE g.user_nombre = NEW.operario_asignado
       ) INTO already_notified;
       
       -- Si no fue notificado como parte del sector, notificar específicamente
