@@ -198,6 +198,9 @@ class ApiService {
 
   async createOrden(orden: Partial<OrdenTrabajo>): Promise<ApiResponse<OrdenTrabajo>> {
     if (supabase) {
+      // Capturar supabase en variable local para TypeScript
+      const supabaseClient = supabase
+      
       // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
       
@@ -216,7 +219,7 @@ class ApiService {
       console.log('📤 Creando orden con dni_cuit:', ordenToInsert.dni_cuit, 'Payload completo:', ordenToInsert)
       
       const performInsert = async (payload: Partial<OrdenTrabajo>) => {
-        return supabase.from('ordenes_trabajo').insert(payload).select().single()
+        return supabaseClient.from('ordenes_trabajo').insert(payload).select().single()
       }
 
       let { data, error } = await performInsert(ordenToInsert)
@@ -268,6 +271,9 @@ class ApiService {
 
   async updateOrden(id: number, orden: Partial<OrdenTrabajo>): Promise<ApiResponse<OrdenTrabajo>> {
     if (supabase) {
+      // Capturar supabase en variable local para TypeScript
+      const supabaseClient = supabase
+      
       // Preparar el objeto para actualizar
       const ordenToUpdate = { ...orden }
       
@@ -294,7 +300,7 @@ class ApiService {
       )
 
       const performUpdate = async (payload: Partial<OrdenTrabajo>) => {
-        return supabase
+        return supabaseClient
           .from('ordenes_trabajo')
           .update(payload)
           .eq('id', id)
