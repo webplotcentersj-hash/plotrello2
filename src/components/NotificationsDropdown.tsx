@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import apiService from '../services/api'
+import { supabase } from '../services/supabaseClient'
 import type { Notification } from '../types/api'
 import './NotificationsDropdown.css'
 
@@ -77,10 +78,7 @@ const NotificationsDropdown = ({ onNotificationClick }: NotificationsDropdownPro
 
   // Suscripción a Realtime para nuevas notificaciones
   useEffect(() => {
-    if (!usuario?.id) return
-
-    const { supabase } = require('../services/supabaseClient')
-    if (!supabase) return
+    if (!usuario?.id || !supabase) return
 
     const channel = supabase
       .channel(`notifications:${usuario.id}`)
