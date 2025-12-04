@@ -213,20 +213,28 @@ class ApiService {
           if (error) {
             console.error('❌ Error en función SQL:', error)
             // Si falla la función, continuar con el método normal
-          } else if (data && data.length > 0) {
-            console.log('✅ Orden creada usando función SQL')
-            // Obtener la orden completa después de la creación
-            const { data: fullOrden, error: fetchError } = await supabaseClient
-              .from('ordenes_trabajo')
-              .select('*')
-              .eq('id', data[0].id)
-              .single()
+          } else if (data !== null && data !== undefined) {
+            // La función ahora retorna solo el ID (integer)
+            const ordenId = typeof data === 'number' ? data : (Array.isArray(data) && data.length > 0 ? data[0] : null)
             
-            if (fetchError) {
-              return { success: false, error: fetchError.message }
+            if (ordenId) {
+              console.log('✅ Orden creada usando función SQL, ID:', ordenId)
+              // Obtener la orden completa después de la creación
+              const { data: fullOrden, error: fetchError } = await supabaseClient
+                .from('ordenes_trabajo')
+                .select('*')
+                .eq('id', ordenId)
+                .single()
+              
+              if (fetchError) {
+                console.error('❌ Error obteniendo orden completa:', fetchError)
+                return { success: false, error: fetchError.message }
+              }
+              
+              return { success: true, data: fullOrden as OrdenTrabajo }
+            } else {
+              console.warn('⚠️ La función retornó un ID inválido:', data)
             }
-            
-            return { success: true, data: fullOrden as OrdenTrabajo }
           }
         } catch (err) {
           console.warn('⚠️ Error al usar función SQL, continuando con método normal:', err)

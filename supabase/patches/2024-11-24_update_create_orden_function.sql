@@ -25,24 +25,12 @@ CREATE OR REPLACE FUNCTION public.create_orden_with_contact(
   p_foto_url text DEFAULT NULL,
   p_dni_cuit text DEFAULT NULL
 )
-RETURNS TABLE (
-  id integer,
-  numero_op varchar,
-  cliente varchar,
-  telefono_cliente text,
-  email_cliente text,
-  direccion_cliente text,
-  whatsapp_link text,
-  ubicacion_link text,
-  drive_link text,
-  foto_url text
-)
+RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
   new_id integer;
-  inserted_row public.ordenes_trabajo%ROWTYPE;
   sectores_final text[];
   sector_inicial_final text;
 BEGIN
@@ -114,23 +102,12 @@ BEGIN
     NOW(),
     NOW()
   )
-  RETURNING * INTO inserted_row;
+  RETURNING id INTO new_id;
   
   -- El trigger automáticamente creará las sub-tareas si hay múltiples sectores
   
-  -- Retornar la fila insertada
-  RETURN QUERY
-  SELECT 
-    inserted_row.id,
-    inserted_row.numero_op,
-    inserted_row.cliente,
-    inserted_row.telefono_cliente,
-    inserted_row.email_cliente,
-    inserted_row.direccion_cliente,
-    inserted_row.whatsapp_link,
-    inserted_row.ubicacion_link,
-    inserted_row.drive_link,
-    inserted_row.foto_url;
+  -- Retornar solo el ID
+  RETURN new_id;
 END;
 $$;
 
