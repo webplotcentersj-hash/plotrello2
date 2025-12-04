@@ -408,3 +408,4 @@ Función trigger que calcula automáticamente `horas_usadas` en `impresora_uso` 
 
 4. **Campos Opcionales**: Los nuevos campos de contacto en `ordenes_trabajo` son opcionales (text, nullable)
 
+
