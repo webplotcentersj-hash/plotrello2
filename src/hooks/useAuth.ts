@@ -1,23 +1,8 @@
 import { useState, useEffect } from 'react'
-
-export type Usuario = {
-  id: number
-  nombre: string
-  rol:
-    | 'administracion'
-    | 'gerencia'
-    | 'recursos-humanos'
-    | 'diseno'
-    | 'imprenta'
-    | 'taller-grafico'
-    | 'instalaciones'
-    | 'metalurgica'
-    | 'caja'
-    | 'mostrador'
-}
+import type { UsuarioRecord, UserRole } from '../types/api'
 
 export function useAuth() {
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const [usuario, setUsuario] = useState<UsuarioRecord | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,11 +19,10 @@ export function useAuth() {
       }
     } else if (import.meta.env.DEV) {
       // Modo desarrollo: crear un usuario mock si no hay usuario
-      // Para pruebas, puedes cambiar el rol aquí
-      const mockUsuario: Usuario = {
+      const mockUsuario: UsuarioRecord = {
         id: 1,
         nombre: 'Usuario Dev',
-        rol: 'administracion' // Cambia esto para probar diferentes roles
+        rol: 'admin'
       }
       setUsuario(mockUsuario)
       console.log('⚠️ Modo desarrollo: Usando usuario mock', mockUsuario)
@@ -46,16 +30,12 @@ export function useAuth() {
     setLoading(false)
   }, [])
 
-  const adminRoles: Usuario['rol'][] = ['administracion', 'gerencia']
-  const isAdmin = !!usuario && adminRoles.includes(usuario.rol)
-  const isMostrador = usuario?.rol === 'mostrador'
+  const isAdmin = usuario?.rol === 'admin'
 
   return {
     usuario,
     isAdmin,
-    isMostrador,
     loading,
     setUsuario
   }
 }
-

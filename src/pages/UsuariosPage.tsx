@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { UsuarioRecord, UserRole } from '../types/api'
+import type { UsuarioRecord, UserRole, SectorRecord } from '../types/api'
 import apiService from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import './UsuariosPage.css'
@@ -8,27 +8,20 @@ import './UsuariosPage.css'
 const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
   const { isAdmin, loading } = useAuth()
   const navigate = useNavigate()
+
   const [usuarios, setUsuarios] = useState<UsuarioRecord[]>([])
-  const [loadingUsuarios, setLoadingUsuarios] = useState(false)
+  const [sectores, setSectores] = useState<SectorRecord[]>([])
+  const [loadingData, setLoadingData] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const roleOptions: Array<{ value: UserRole; label: string; color: string }> = [
-    { value: 'diseno', label: 'Diseño', color: '#f97316' },
-    { value: 'imprenta', label: 'Imprenta', color: '#38bdf8' },
-    { value: 'taller-grafico', label: 'Taller Gráfico', color: '#6366f1' },
-    { value: 'instalaciones', label: 'Instalaciones', color: '#a855f7' },
-    { value: 'metalurgica', label: 'Metalúrgica', color: '#ec4899' },
-    { value: 'caja', label: 'Caja', color: '#facc15' },
-    { value: 'mostrador', label: 'Mostrador', color: '#10b981' },
-    { value: 'recursos-humanos', label: 'Recursos Humanos', color: '#f472b6' },
-    { value: 'gerencia', label: 'Gerencia', color: '#0ea5e9' }
-  ]
 
   const [formData, setFormData] = useState({
     nombre: '',
     password: '',
     confirmPassword: '',
-    rol: 'diseno' as UserRole
+    rol: 'empleado' as UserRole,
+    sector_id: '' as string | number
   })
+
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -41,27 +34,33 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
 
   useEffect(() => {
     if (isAdmin) {
-      loadUsuarios()
+      loadData()
     }
   }, [isAdmin])
 
-  const loadUsuarios = async () => {
-    setLoadingUsuarios(true)
+  const loadData = async () => {
+    setLoadingData(true)
     setError(null)
     try {
-      const response = await apiService.getUsuarios()
-      if (response.success && response.data) {
-        // Filtrar solo usuarios no admin
-        const usuariosNoAdmin = response.data.filter((u) => u.rol !== 'administracion')
-        setUsuarios(usuariosNoAdmin)
+      const [usersRes, sectorsRes] = await Promise.all([
+        apiService.getUsuarios(),
+        apiService.getSectores()
+      ])
+
+      if (usersRes.success && usersRes.data) {
+        setUsuarios(usersRes.data)
       } else {
         setError('Error al cargar usuarios')
       }
+
+      if (sectorsRes.success && sectorsRes.data) {
+        setSectores(sectorsRes.data)
+      }
     } catch (err) {
-      console.error('Error cargando usuarios:', err)
-      setError('Error al cargar usuarios')
+      console.error('Error cargando datos:', err)
+      setError('Error al cargar datos del sistema')
     } finally {
-      setLoadingUsuarios(false)
+      setLoadingData(false)
     }
   }
 
@@ -86,12 +85,19 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
       return
     }
 
+    // Si es empleado, debe tener sector
+    if (formData.rol === 'empleado' && !formData.sector_id) {
+      setError('Debes seleccionar un sector para el empleado')
+      return
+    }
+
     setCreating(true)
     try {
       const response = await apiService.createUsuario({
         nombre: formData.nombre.trim(),
         password: formData.password,
-        rol: formData.rol
+        rol: formData.rol,
+        sector_id: formData.sector_id ? Number(formData.sector_id) : null
       })
 
       if (response.success) {
@@ -100,10 +106,11 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
           nombre: '',
           password: '',
           confirmPassword: '',
-          rol: 'diseno'
+          rol: 'empleado',
+          sector_id: ''
         })
         setShowCreateForm(false)
-        await loadUsuarios()
+        await loadData()
       } else {
         setError(response.error || 'Error al crear usuario')
       }
@@ -115,16 +122,10 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
     }
   }
 
-  const getRolLabel = (rol: UserRole) => {
-    const option = roleOptions.find((r) => r.value === rol)
-    if (rol === 'administracion') return 'Administración'
-    return option?.label || rol
-  }
-
-  const getRolColor = (rol: UserRole) => {
-    if (rol === 'administracion') return '#eb671b'
-    const option = roleOptions.find((r) => r.value === rol)
-    return option?.color || '#6b7280'
+  const getSectorColor = (nombre?: string | null) => {
+    if (!nombre) return '#6b7280'
+    const sector = sectores.find(s => s.nombre === nombre)
+    return sector?.color || '#6b7280'
   }
 
   if (loading) {
@@ -155,14 +156,14 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
     <div className="usuarios-page">
       <header className="usuarios-header">
         <div className="header-content">
-          <img 
-            src="https://trello.plotcenter.com.ar/Group%20187.png" 
-            alt="Plot Center Logo" 
+          <img
+            src="https://trello.plotcenter.com.ar/Group%20187.png"
+            alt="Plot Center Logo"
             className="usuarios-logo"
           />
           <div className="header-text">
             <h1>Gestión de Usuarios</h1>
-            <p>Administra usuarios del sistema (Taller y Mostrador)</p>
+            <p>Administra usuarios del sistema</p>
           </div>
           <button className="back-button" onClick={onBack}>
             ← Volver
@@ -223,14 +224,30 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
                   onChange={(e) => setFormData({ ...formData, rol: e.target.value as UserRole })}
                   disabled={creating}
                 >
-                  {roleOptions.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
+                  <option value="empleado">Empleado</option>
+                  <option value="admin">Administrador</option>
                 </select>
-                <small className="form-hint">Los usuarios del rol Administración deben crearse desde la base de datos</small>
               </div>
+
+              {formData.rol === 'empleado' && (
+                <div className="form-group">
+                  <label htmlFor="sector">Sector *</label>
+                  <select
+                    id="sector"
+                    value={formData.sector_id}
+                    onChange={(e) => setFormData({ ...formData, sector_id: e.target.value })}
+                    required
+                    disabled={creating}
+                  >
+                    <option value="">-- Seleccionar Sector --</option>
+                    {sectores.map((sector) => (
+                      <option key={sector.id} value={sector.id}>
+                        {sector.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="form-group">
                 <label htmlFor="password">Contraseña *</label>
@@ -269,7 +286,8 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
                       nombre: '',
                       password: '',
                       confirmPassword: '',
-                      rol: 'diseno'
+                      rol: 'empleado',
+                      sector_id: ''
                     })
                     setError(null)
                     setSuccess(null)
@@ -292,10 +310,10 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
 
         <div className="usuarios-list">
           <h2>Usuarios del Sistema ({usuarios.length})</h2>
-          
-          {loadingUsuarios ? (
+
+          {loadingData ? (
             <div className="loading-state">
-              <p>Cargando usuarios...</p>
+              <p>Cargando datos...</p>
             </div>
           ) : usuarios.length === 0 ? (
             <div className="empty-state">
@@ -312,11 +330,20 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
                     </div>
                     <div className="usuario-info">
                       <h3>{usuario.nombre}</h3>
-                      <div
-                        className="usuario-rol-badge"
-                        style={{ backgroundColor: getRolColor(usuario.rol) }}
-                      >
-                        {getRolLabel(usuario.rol)}
+                      <div className="badges-container">
+                        <span
+                          className={`rol-badge ${usuario.rol === 'admin' ? 'admin' : ''}`}
+                        >
+                          {usuario.rol === 'admin' ? 'Admin' : 'Empleado'}
+                        </span>
+                        {usuario.nombre_sector && (
+                          <span
+                            className="sector-badge"
+                            style={{ backgroundColor: getSectorColor(usuario.nombre_sector) }}
+                          >
+                            {usuario.nombre_sector}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -335,4 +362,3 @@ const UsuariosPage = ({ onBack }: { onBack: () => void }) => {
 }
 
 export default UsuariosPage
-

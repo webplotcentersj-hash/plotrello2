@@ -26,22 +26,14 @@ export interface OrdenTrabajo {
   drive_link?: string | null
 }
 
-export type UserRole =
-  | 'administracion'
-  | 'gerencia'
-  | 'recursos-humanos'
-  | 'diseno'
-  | 'imprenta'
-  | 'taller-grafico'
-  | 'instalaciones'
-  | 'metalurgica'
-  | 'caja'
-  | 'mostrador'
+export type UserRole = 'admin' | 'empleado'
 
 export interface UsuarioRecord {
   id: number
   nombre: string
   rol: UserRole
+  sector_id?: number | null
+  nombre_sector?: string | null
 }
 
 export interface SectorRecord {

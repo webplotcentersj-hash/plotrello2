@@ -170,12 +170,12 @@ class ApiService {
     if (supabase) {
       // Capturar supabase en variable local para TypeScript
       const supabaseClient = supabase
-      
+
       // SOLUCIÓN DIRECTA: Si hay campos de contacto o sectores múltiples, usar función SQL que evita schema cache
-      const hasContactFields = orden.telefono_cliente || orden.direccion_cliente || orden.drive_link || 
-          orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link
+      const hasContactFields = orden.telefono_cliente || orden.direccion_cliente || orden.drive_link ||
+        orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link
       const hasMultipleSectors = orden.sectores && orden.sectores.length > 0
-      
+
       if (hasContactFields || hasMultipleSectors) {
         try {
           console.log('🔄 Usando función SQL para crear orden (evita schema cache)')
@@ -209,11 +209,11 @@ class ApiService {
             p_foto_url: orden.foto_url || null,
             p_dni_cuit: orden.dni_cuit || null
           }
-          
+
           console.log('🔍 Llamando función SQL con parámetros:', JSON.stringify(rpcParams, null, 2))
-          
+
           const { data, error } = await supabaseClient.rpc('create_orden_with_contact', rpcParams)
-          
+
           if (error) {
             console.error('❌ Error en función SQL:', error)
             console.error('❌ Detalles del error:', {
@@ -223,18 +223,18 @@ class ApiService {
               code: error.code
             })
             // Retornar el error en lugar de continuar silenciosamente
-            return { 
-              success: false, 
-              error: `Error al crear orden: ${error.message}${error.hint ? ` (${error.hint})` : ''}` 
+            return {
+              success: false,
+              error: `Error al crear orden: ${error.message}${error.hint ? ` (${error.hint})` : ''}`
             }
           }
-          
+
           console.log('📥 Respuesta de función SQL (raw):', { data, type: typeof data, isArray: Array.isArray(data) })
-          
+
           if (data !== null && data !== undefined) {
             // La función ahora retorna solo el ID (integer)
             const ordenId = typeof data === 'number' ? data : (Array.isArray(data) && data.length > 0 ? data[0] : null)
-            
+
             if (ordenId && typeof ordenId === 'number') {
               console.log('✅ Orden creada usando función SQL, ID:', ordenId)
               // Obtener la orden completa después de la creación
@@ -243,41 +243,41 @@ class ApiService {
                 .select('*')
                 .eq('id', ordenId)
                 .single()
-              
+
               if (fetchError) {
                 console.error('❌ Error obteniendo orden completa:', fetchError)
                 return { success: false, error: `Error al obtener orden creada: ${fetchError.message}` }
               }
-              
+
               console.log('✅ Orden completa obtenida:', fullOrden)
               return { success: true, data: fullOrden as OrdenTrabajo }
             } else {
               console.error('❌ La función retornó un ID inválido:', { data, ordenId, type: typeof ordenId })
-              return { 
-                success: false, 
-                error: `La función SQL retornó un ID inválido: ${JSON.stringify(data)}` 
+              return {
+                success: false,
+                error: `La función SQL retornó un ID inválido: ${JSON.stringify(data)}`
               }
             }
           } else {
             console.error('❌ La función SQL retornó null o undefined')
-            return { 
-              success: false, 
-              error: 'La función SQL no retornó ningún ID. Verifica que la función se ejecutó correctamente.' 
+            return {
+              success: false,
+              error: 'La función SQL no retornó ningún ID. Verifica que la función se ejecutó correctamente.'
             }
           }
         } catch (err) {
           console.error('❌ Excepción al usar función SQL:', err)
           const errorMessage = err instanceof Error ? err.message : String(err)
-          return { 
-            success: false, 
-            error: `Error inesperado al crear orden: ${errorMessage}` 
+          return {
+            success: false,
+            error: `Error inesperado al crear orden: ${errorMessage}`
           }
         }
       }
-      
+
       // Preparar el objeto para insertar
       const ordenToInsert = { ...orden }
-      
+
       // Asegurar que sectores sea un array válido
       if (ordenToInsert.sectores && ordenToInsert.sectores.length > 0) {
         ordenToInsert.sectores = ordenToInsert.sectores
@@ -287,12 +287,12 @@ class ApiService {
       } else {
         ordenToInsert.sectores = null
       }
-      
+
       // Asegurar que sector_inicial esté definido
       if (!ordenToInsert.sector_inicial && ordenToInsert.sector) {
         ordenToInsert.sector_inicial = ordenToInsert.sector
       }
-      
+
       // Solo eliminar foto_url si está vacío, null o undefined (pero NUNCA eliminarlo si tiene valor)
       if (ordenToInsert.foto_url && ordenToInsert.foto_url.trim() !== '') {
         // Mantener foto_url - es importante
@@ -301,14 +301,14 @@ class ApiService {
         // Solo eliminar si realmente está vacío
         delete ordenToInsert.foto_url
       }
-      
+
       // Asegurar que dni_cuit se envíe correctamente (incluso si es null o string vacío)
       if (ordenToInsert.dni_cuit === undefined) {
         ordenToInsert.dni_cuit = null
       } else if (ordenToInsert.dni_cuit === '') {
         ordenToInsert.dni_cuit = null
       }
-      
+
       console.log('📤 Creando orden. Payload completo:', JSON.stringify(ordenToInsert, null, 2))
       console.log('📞 Datos de contacto en payload:', {
         telefono: ordenToInsert.telefono_cliente || 'null',
@@ -319,7 +319,7 @@ class ApiService {
         drive: ordenToInsert.drive_link || 'null',
         foto: ordenToInsert.foto_url ? 'presente' : 'null'
       })
-      
+
       const performInsert = async (payload: Partial<OrdenTrabajo>) => {
         return supabaseClient.from('ordenes_trabajo').insert(payload).select().single()
       }
@@ -330,12 +330,12 @@ class ApiService {
       if (error) {
         console.error('❌ Error al crear orden:', error.message, error)
         const errorLower = error.message.toLowerCase()
-        const isColumnError = errorLower.includes('column') || 
-                              errorLower.includes('does not exist') || 
-                              errorLower.includes('not found') ||
-                              errorLower.includes('schema cache') ||
-                              errorLower.includes('could not find')
-        
+        const isColumnError = errorLower.includes('column') ||
+          errorLower.includes('does not exist') ||
+          errorLower.includes('not found') ||
+          errorLower.includes('schema cache') ||
+          errorLower.includes('could not find')
+
         if (isColumnError) {
           // Separar foto_url de las otras columnas opcionales - foto_url es más importante
           const contactColumns = [
@@ -358,7 +358,7 @@ class ApiService {
               missingColumns.push(col)
             }
           })
-          
+
           if (missingColumns.length > 0) {
             console.warn(`⚠️ Columnas faltantes detectadas en el error: ${missingColumns.join(', ')}`)
             // Eliminar SOLO las columnas que específicamente faltan
@@ -371,7 +371,7 @@ class ApiService {
             console.log(`⚠️ Eliminando columnas faltantes: ${missingColumns.join(', ')}. Reintentando...`)
             console.log('📤 Payload sanitizado:', JSON.stringify(sanitizedPayload, null, 2))
             const fallback = await performInsert(sanitizedPayload)
-            
+
             if (fallback.error) {
               console.error('❌ Error persistente después de eliminar columnas:', fallback.error.message)
               // Si aún falla, puede ser otra columna. Intentar sin SOLO las columnas de contacto (mantener foto_url si existe)
@@ -381,12 +381,12 @@ class ApiService {
                 // @ts-expect-error index access
                 delete minimalPayload[col]
               })
-              
+
               // Si foto_url estaba en el error, también eliminarlo
               if (missingColumns.includes('foto_url')) {
                 delete minimalPayload.foto_url
               }
-              
+
               console.log('⚠️ Reintentando sin columnas de contacto...')
               const finalAttempt = await performInsert(minimalPayload)
               if (finalAttempt.error) {
@@ -423,7 +423,7 @@ class ApiService {
         console.error('❌ Error no relacionado con columnas:', error.message)
         return { success: false, error: error.message }
       }
-      
+
       // Log de éxito con datos guardados
       if (ordenToInsert.telefono_cliente || ordenToInsert.email_cliente || ordenToInsert.direccion_cliente) {
         console.log('✅ Orden creada con datos de contacto:', {
@@ -452,10 +452,10 @@ class ApiService {
     if (supabase) {
       // Capturar supabase en variable local para TypeScript
       const supabaseClient = supabase
-      
+
       // SOLUCIÓN DIRECTA: Si hay campos de contacto, usar función SQL que evita schema cache
-      if (orden.telefono_cliente || orden.direccion_cliente || orden.drive_link || 
-          orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link) {
+      if (orden.telefono_cliente || orden.direccion_cliente || orden.drive_link ||
+        orden.ubicacion_link || orden.email_cliente || orden.whatsapp_link) {
         try {
           console.log('🔄 Usando función SQL para actualizar (evita schema cache)')
           const { data, error } = await supabaseClient.rpc('update_orden_with_contact', {
@@ -468,7 +468,7 @@ class ApiService {
             p_drive_link: orden.drive_link || null,
             p_foto_url: orden.foto_url || null
           })
-          
+
           if (error) {
             console.error('❌ Error en función SQL:', error)
             // Si falla la función, continuar con el método normal
@@ -480,11 +480,11 @@ class ApiService {
               .select('*')
               .eq('id', id)
               .single()
-            
+
             if (fetchError) {
               return { success: false, error: fetchError.message }
             }
-            
+
             return { success: true, data: fullOrden as OrdenTrabajo }
           }
         } catch (err) {
@@ -492,10 +492,10 @@ class ApiService {
           // Continuar con el método normal si la función no existe o falla
         }
       }
-      
+
       // Preparar el objeto para actualizar
       const ordenToUpdate = { ...orden }
-      
+
       // Solo eliminar foto_url si está vacío, null o undefined (pero NUNCA eliminarlo si tiene valor)
       if (ordenToUpdate.foto_url && ordenToUpdate.foto_url.trim() !== '') {
         // Mantener foto_url - es importante
@@ -504,7 +504,7 @@ class ApiService {
         // Solo eliminar si realmente está vacío
         delete ordenToUpdate.foto_url
       }
-      
+
       // Asegurar que dni_cuit se envíe correctamente (incluso si es null o string vacío)
       if (ordenToUpdate.dni_cuit === undefined) {
         // Si no viene en el update, no lo modificamos (mantener valor existente)
@@ -512,7 +512,7 @@ class ApiService {
       } else if (ordenToUpdate.dni_cuit === '') {
         ordenToUpdate.dni_cuit = null
       }
-      
+
       console.log('📤 Actualizando orden. Payload completo:', JSON.stringify(ordenToUpdate, null, 2))
       console.log('📞 Datos de contacto en actualización:', {
         telefono: ordenToUpdate.telefono_cliente || 'null',
@@ -539,12 +539,12 @@ class ApiService {
       if (error) {
         console.error('❌ Error al actualizar orden:', error.message, error)
         const errorLower = error.message.toLowerCase()
-        const isColumnError = errorLower.includes('column') || 
-                              errorLower.includes('does not exist') || 
-                              errorLower.includes('not found') ||
-                              errorLower.includes('schema cache') ||
-                              errorLower.includes('could not find')
-        
+        const isColumnError = errorLower.includes('column') ||
+          errorLower.includes('does not exist') ||
+          errorLower.includes('not found') ||
+          errorLower.includes('schema cache') ||
+          errorLower.includes('could not find')
+
         if (isColumnError) {
           // Separar foto_url de las otras columnas opcionales - foto_url es más importante
           const contactColumns = [
@@ -567,7 +567,7 @@ class ApiService {
               missingColumns.push(col)
             }
           })
-          
+
           if (missingColumns.length > 0) {
             console.warn(`⚠️ Columnas faltantes detectadas en el error: ${missingColumns.join(', ')}`)
             // Eliminar SOLO las columnas que específicamente faltan
@@ -580,7 +580,7 @@ class ApiService {
             console.log(`⚠️ Eliminando columnas faltantes: ${missingColumns.join(', ')}. Reintentando...`)
             console.log('📤 Payload sanitizado:', JSON.stringify(sanitizedPayload, null, 2))
             const fallback = await performUpdate(sanitizedPayload)
-            
+
             if (fallback.error) {
               console.error('❌ Error persistente después de eliminar columnas:', fallback.error.message)
               // Si aún falla, puede ser otra columna. Intentar sin SOLO las columnas de contacto (mantener foto_url si existe)
@@ -590,12 +590,12 @@ class ApiService {
                 // @ts-expect-error index access
                 delete minimalPayload[col]
               })
-              
+
               // Si foto_url estaba en el error, también eliminarlo
               if (missingColumns.includes('foto_url')) {
                 delete minimalPayload.foto_url
               }
-              
+
               console.log('⚠️ Reintentando sin columnas de contacto...')
               const finalAttempt = await performUpdate(minimalPayload)
               if (finalAttempt.error) {
@@ -632,7 +632,7 @@ class ApiService {
         console.error('❌ Error no relacionado con columnas:', error.message)
         return { success: false, error: error.message }
       }
-      
+
       // Éxito - verificar que los datos se guardaron
       if (ordenToUpdate.telefono_cliente || ordenToUpdate.ubicacion_link || ordenToUpdate.direccion_cliente) {
         console.log('✅ Orden actualizada con datos de contacto:', {
@@ -641,7 +641,7 @@ class ApiService {
           direccion: ordenToUpdate.direccion_cliente || 'no'
         })
       }
-      
+
       // Log de éxito con datos guardados
       if (ordenToUpdate.telefono_cliente || ordenToUpdate.email_cliente || ordenToUpdate.direccion_cliente) {
         console.log('✅ Orden actualizada con datos de contacto:', {
@@ -799,11 +799,17 @@ class ApiService {
     if (supabase) {
       const { data, error } = await supabase
         .from('usuarios')
-        .select('id, nombre, rol')
+        .select('id, nombre, rol, sector_id, sectores(nombre)')
         .order('nombre', { ascending: true })
 
       if (error) return { success: false, error: error.message }
-      return { success: true, data: (data as UsuarioRecord[]) ?? [] }
+
+      const mappedUsers = (data as any[]).map(u => ({
+        ...u,
+        nombre_sector: Array.isArray(u.sectores) ? u.sectores[0]?.nombre : u.sectores?.nombre
+      }))
+
+      return { success: true, data: (mappedUsers as UsuarioRecord[]) }
     }
 
     if (hasLegacyBackend) {
@@ -879,13 +885,20 @@ class ApiService {
     if (supabase) {
       const { data, error } = await supabase
         .from('usuarios')
-        .select('id, nombre, rol')
+        .select('id, nombre, rol, sector_id, sectores(nombre)')
         .eq('id', id)
         .maybeSingle()
 
       if (error) return { success: false, error: error.message }
       if (!data) return { success: false, error: 'Usuario no encontrado' }
-      return { success: true, data: data as UsuarioRecord }
+
+      const userData = data as any
+      const mappedUser = {
+        ...userData,
+        nombre_sector: Array.isArray(userData.sectores) ? userData.sectores[0]?.nombre : userData.sectores?.nombre
+      }
+
+      return { success: true, data: mappedUser as UsuarioRecord }
     }
 
     if (hasLegacyBackend) {
@@ -902,6 +915,7 @@ class ApiService {
     nombre: string
     password: string
     rol: UserRole
+    sector_id?: number | null
   }): Promise<ApiResponse<UsuarioRecord>> {
     let lastError: string | null = null
 
@@ -910,7 +924,8 @@ class ApiService {
       const { data, error } = await supabase.rpc('crear_usuario', {
         p_nombre: usuario.nombre.trim(),
         p_password: usuario.password,
-        p_rol: usuario.rol
+        p_rol: usuario.rol,
+        p_sector_id: usuario.sector_id || null
       })
 
       if (!error && data && data.length > 0) {
@@ -930,9 +945,10 @@ class ApiService {
           .insert({
             nombre: usuario.nombre.trim(),
             password_hash: passwordHash,
-            rol: usuario.rol
+            rol: usuario.rol,
+            sector_id: usuario.sector_id || null
           })
-          .select('id, nombre, rol')
+          .select('id, nombre, rol, sector_id')
           .single()
 
         if (!insertError && insertData) {
@@ -968,7 +984,8 @@ class ApiService {
       const nuevoUsuario: UsuarioRecord = {
         id: fallbackUsuarios.length + 1,
         nombre: usuario.nombre,
-        rol: usuario.rol
+        rol: usuario.rol,
+        sector_id: usuario.sector_id || null
       }
       fallbackUsuarios.push(nuevoUsuario)
       return { success: true, data: nuevoUsuario }
@@ -1135,9 +1152,9 @@ class ApiService {
         return { success: true, data: { usuario: usuarioDb } }
       } catch (err) {
         console.error('Excepción en login:', err)
-        return { 
-          success: false, 
-          error: err instanceof Error ? err.message : 'Error inesperado al iniciar sesión' 
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : 'Error inesperado al iniciar sesión'
         }
       }
     }
@@ -1152,7 +1169,7 @@ class ApiService {
     const mockUsuario: UsuarioRecord = {
       id: 1,
       nombre: usuario || 'Dev',
-      rol: 'administracion'
+      rol: 'admin'
     }
 
     localStorage.setItem('usuario', JSON.stringify(mockUsuario))
@@ -1340,7 +1357,7 @@ class ApiService {
         .single()
 
       if (error) return { success: false, error: error.message }
-      
+
       // Actualizar estado de la impresora a "En Uso"
       await supabase
         .from('impresoras')
@@ -1366,7 +1383,7 @@ class ApiService {
         .single()
 
       if (error) return { success: false, error: error.message }
-      
+
       // Verificar si hay otros usos activos para esta impresora
       const { data: otrosUsos } = await supabase
         .from('impresora_uso')
