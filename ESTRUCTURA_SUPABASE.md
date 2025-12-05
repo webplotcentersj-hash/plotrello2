@@ -8,7 +8,8 @@ Este documento describe la estructura completa de la base de datos Supabase basa
 - `id` (integer, PK, auto-increment)
 - `nombre` (varchar(100), UNIQUE, NOT NULL)
 - `password_hash` (varchar(255), NOT NULL)
-- `rol` (text, CHECK: 'administracion', 'taller', 'mostrador')
+- `rol` (text, CHECK: 'admin', 'empleado')
+- `sector_id` (integer, FK → sectores.id, ON DELETE SET NULL)
 - `last_seen` (timestamptz, DEFAULT now())
 
 ### 2. `sectores`
@@ -363,7 +364,7 @@ Vista que calcula la ocupación de impresoras basada en órdenes de "Taller Grá
 Función de autenticación que:
 - Busca usuario por nombre (case-insensitive)
 - Verifica password usando `crypt()`
-- Retorna: `id`, `nombre`, `rol`
+- Retorna: `id`, `nombre`, `rol`, `sector_id`
 
 **Permisos:** GRANT EXECUTE TO anon, authenticated
 
@@ -395,6 +396,7 @@ Función trigger que calcula automáticamente `horas_usadas` en `impresora_uso` 
 8. **2024-11-23**: Update usuario roles check
 9. **2024-11-24**: Add contact fields to ordenes (telefono_cliente, email_cliente, direccion_cliente, whatsapp_link, ubicacion_link, drive_link)
 10. **2024-11-24**: Create impresoras tables (impresoras, impresora_uso, v_impresoras_ocupacion)
+11. **2024-12-05**: Update roles to 'admin'/'empleado' and add `sector_id` to `usuarios`
 
 ## Notas Importantes
 
