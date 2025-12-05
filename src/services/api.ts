@@ -797,17 +797,27 @@ class ApiService {
   // ========== USUARIOS ==========
   async getUsuarios(): Promise<ApiResponse<UsuarioRecord[]>> {
     if (supabase) {
-      const { data, error } = await supabase
+      // 1. Obtener usuarios (sin join problemático)
+      const { data: users, error: usersError } = await supabase
         .from('usuarios')
-        .select('id, nombre, rol, sector_id, sectores(nombre)')
+        .select('id, nombre, rol, sector_id')
         .order('nombre', { ascending: true })
 
-      if (error) return { success: false, error: error.message }
+      if (usersError) return { success: false, error: usersError.message }
 
-      const mappedUsers = (data as any[]).map(u => ({
-        ...u,
-        nombre_sector: Array.isArray(u.sectores) ? u.sectores[0]?.nombre : u.sectores?.nombre
-      }))
+      // 2. Obtener lista de sectores para hacer el join manual
+      const { data: sectors } = await supabase
+        .from('sectores')
+        .select('id, nombre')
+
+      // 3. Unir datos en JS (más robusto que depender de la caché de API)
+      const mappedUsers = (users as any[]).map(u => {
+        const sector = sectors?.find(s => s.id === u.sector_id)
+        return {
+          ...u,
+          nombre_sector: sector?.nombre || null
+        }
+      })
 
       return { success: true, data: (mappedUsers as UsuarioRecord[]) }
     }
@@ -883,19 +893,30 @@ class ApiService {
 
   async getUsuario(id: number): Promise<ApiResponse<UsuarioRecord>> {
     if (supabase) {
-      const { data, error } = await supabase
+      // 1. Obtener usuario base
+      const { data: user, error } = await supabase
         .from('usuarios')
-        .select('id, nombre, rol, sector_id, sectores(nombre)')
+        .select('id, nombre, rol, sector_id')
         .eq('id', id)
         .maybeSingle()
 
       if (error) return { success: false, error: error.message }
-      if (!data) return { success: false, error: 'Usuario no encontrado' }
+      if (!user) return { success: false, error: 'Usuario no encontrado' }
 
-      const userData = data as any
+      // 2. Obtener nombre del sector si existe (manual join)
+      let nombreSector = null
+      if (user.sector_id) {
+        const { data: sector } = await supabase
+          .from('sectores')
+          .select('nombre')
+          .eq('id', user.sector_id)
+          .single()
+        if (sector) nombreSector = sector.nombre
+      }
+
       const mappedUser = {
-        ...userData,
-        nombre_sector: Array.isArray(userData.sectores) ? userData.sectores[0]?.nombre : userData.sectores?.nombre
+        ...user,
+        nombre_sector: nombreSector
       }
 
       return { success: true, data: mappedUser as UsuarioRecord }
