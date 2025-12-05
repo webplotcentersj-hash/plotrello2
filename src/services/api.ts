@@ -186,7 +186,7 @@ class ApiService {
             hasMultipleSectors,
             hasContactFields
           })
-          const { data, error } = await supabaseClient.rpc('create_orden_with_contact', {
+          const rpcParams = {
             p_numero_op: orden.numero_op || '',
             p_cliente: orden.cliente || '',
             p_descripcion: orden.descripcion || null,
@@ -208,16 +208,34 @@ class ApiService {
             p_drive_link: orden.drive_link || null,
             p_foto_url: orden.foto_url || null,
             p_dni_cuit: orden.dni_cuit || null
-          })
+          }
+          
+          console.log('🔍 Llamando función SQL con parámetros:', JSON.stringify(rpcParams, null, 2))
+          
+          const { data, error } = await supabaseClient.rpc('create_orden_with_contact', rpcParams)
           
           if (error) {
             console.error('❌ Error en función SQL:', error)
-            // Si falla la función, continuar con el método normal
-          } else if (data !== null && data !== undefined) {
+            console.error('❌ Detalles del error:', {
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code
+            })
+            // Retornar el error en lugar de continuar silenciosamente
+            return { 
+              success: false, 
+              error: `Error al crear orden: ${error.message}${error.hint ? ` (${error.hint})` : ''}` 
+            }
+          }
+          
+          console.log('📥 Respuesta de función SQL (raw):', { data, type: typeof data, isArray: Array.isArray(data) })
+          
+          if (data !== null && data !== undefined) {
             // La función ahora retorna solo el ID (integer)
             const ordenId = typeof data === 'number' ? data : (Array.isArray(data) && data.length > 0 ? data[0] : null)
             
-            if (ordenId) {
+            if (ordenId && typeof ordenId === 'number') {
               console.log('✅ Orden creada usando función SQL, ID:', ordenId)
               // Obtener la orden completa después de la creación
               const { data: fullOrden, error: fetchError } = await supabaseClient
@@ -228,17 +246,32 @@ class ApiService {
               
               if (fetchError) {
                 console.error('❌ Error obteniendo orden completa:', fetchError)
-                return { success: false, error: fetchError.message }
+                return { success: false, error: `Error al obtener orden creada: ${fetchError.message}` }
               }
               
+              console.log('✅ Orden completa obtenida:', fullOrden)
               return { success: true, data: fullOrden as OrdenTrabajo }
             } else {
-              console.warn('⚠️ La función retornó un ID inválido:', data)
+              console.error('❌ La función retornó un ID inválido:', { data, ordenId, type: typeof ordenId })
+              return { 
+                success: false, 
+                error: `La función SQL retornó un ID inválido: ${JSON.stringify(data)}` 
+              }
+            }
+          } else {
+            console.error('❌ La función SQL retornó null o undefined')
+            return { 
+              success: false, 
+              error: 'La función SQL no retornó ningún ID. Verifica que la función se ejecutó correctamente.' 
             }
           }
         } catch (err) {
-          console.warn('⚠️ Error al usar función SQL, continuando con método normal:', err)
-          // Continuar con el método normal si la función no existe o falla
+          console.error('❌ Excepción al usar función SQL:', err)
+          const errorMessage = err instanceof Error ? err.message : String(err)
+          return { 
+            success: false, 
+            error: `Error inesperado al crear orden: ${errorMessage}` 
+          }
         }
       }
       
