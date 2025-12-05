@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { UsuarioRecord, UserRole } from '../types/api'
+import type { UsuarioRecord } from '../types/api'
 
 export function useAuth() {
   const [usuario, setUsuario] = useState<UsuarioRecord | null>(null)
