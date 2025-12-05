@@ -71,7 +71,10 @@ SET
   activo = EXCLUDED.activo,
   orden_visualizacion = EXCLUDED.orden_visualizacion;
 
-RAISE NOTICE '✅ Sectores actualizados en la tabla sectores';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Sectores actualizados en la tabla sectores';
+END $$;
 
 COMMIT;
 
