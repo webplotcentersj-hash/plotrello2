@@ -1,36 +1,80 @@
 .trello-plot-app {
   min-height: 100vh;
-  padding: 32px;
-  background: radial-gradient(circle at top left, rgba(235, 103, 27, 0.08), transparent 45%),
-    radial-gradient(circle at 20% 20%, rgba(146, 61, 255, 0.08), transparent 40%),
-    var(--surface);
+  padding: 24px;
+  /* Subtle mesh pattern overlay */
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(255, 120, 36, 0.04) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.04) 0%, transparent 25%);
 }
 
 .app-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 24px;
-  margin-top: 24px;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  /* Slightly wider sidebar */
+  gap: 32px;
+  /* More breathing room */
+  margin-top: 32px;
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .board-panel {
-  background: color-mix(in srgb, var(--surface-card) 90%, transparent);
+  /* Glass Card Effect */
+  background: var(--surface-card);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--surface-border);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 20px 45px rgba(5, 6, 15, 0.5);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.board-panel::before {
+  /* Shine effect */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
 .insights-panel {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .app-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
   }
 }
 
+@media (max-width: 1100px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
 
+  .insights-panel {
+    display: none;
+    /* Mobile optimization: hide sidebar or move it */
+  }
+}
+
+/* Floating Action Button Enhancement */
+.floating-button {
+  background: var(--gradient-brand) !important;
+  box-shadow: 0 10px 25px -5px rgba(255, 120, 36, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.floating-button:hover {
+  transform: translateY(-4px) scale(1.05) !important;
+  box-shadow: 0 15px 35px -5px rgba(255, 120, 36, 0.6) !important;
+}
