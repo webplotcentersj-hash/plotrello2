@@ -1,46 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap'); /* Adding Outfit for headings */
 
 :root {
-  /* Brand Colors - Electric Orange */
-  --brand: #ff7824;
-  --brand-strong: #ff914d;
+  --brand: #eb671b;
+  --brand-strong: #c34f0f;
   --brand-soft: #ffe3d0;
-  --brand-glow: rgba(255, 120, 36, 0.4);
-
-  /* Surface Colors - Deep Space Theme */
-  --surface: #050511;       /* Fondo principal más oscuro/azulado */
-  --surface-muted: #0f111a; /* Paneles secundarios */
-  --surface-card: rgba(30, 32, 48, 0.6); /* Glass effect base */
-  --surface-border: rgba(255, 255, 255, 0.08);
-  
-  /* Text Colors */
-  --text-primary: #e8eaf6;  /* Blanco suavizado */
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-
-  /* Glassmorphism Tokens */
-  --glass-bg: rgba(20, 20, 35, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shine: rgba(255, 255, 255, 0.03);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-  --backdrop-blur: blur(12px);
-
-  /* Semantic Colors */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --info: #3b82f6;
-
-  /* Gradients */
-  --gradient-brand: linear-gradient(135deg, #ff7824, #f59e0b);
-  --gradient-dark: linear-gradient(180deg, rgba(30, 32, 48, 0.7) 0%, rgba(30, 32, 48, 0.4) 100%);
-
-  /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Outfit', system-ui, sans-serif;
-
-  font-family: var(--font-sans);
+  --surface: #0e0f16;
+  --surface-muted: #171925;
+  --surface-card: #1f2233;
+  --surface-border: #2b2f43;
+  --text-primary: #f9fbff;
+  --text-secondary: #b7bed3;
+  --text-muted: #7c84a0;
+  --success: #3dd598;
+  --warning: #ffcf5c;
+  --danger: #ff6b6b;
+  --gradient: linear-gradient(135deg, #eb671b, #ff914d);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -55,13 +31,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* Deep animated background simulated with CSS */
-  background-color: var(--surface);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(255, 120, 36, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.05) 0px, transparent 50%);
-  background-attachment: fixed;
+  background: radial-gradient(circle at top, #1b1f2f 0%, #0e0f16 55%);
   color: var(--text-primary);
 }
 
@@ -71,30 +41,4 @@ body {
 
 button {
   font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-  letter-spacing: -0.02em;
-}
-
-/* Scrollbar moderno */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
