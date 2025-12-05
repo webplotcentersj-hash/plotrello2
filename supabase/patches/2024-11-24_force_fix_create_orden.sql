@@ -183,6 +183,17 @@ BEGIN
     sector_inicial_final := NULL;
   END IF;
   
+  -- Validar que sector_inicial_final esté en la lista de sectores permitidos
+  -- Si no está, usar 'Diseño Gráfico' como default
+  IF sector_inicial_final IS NOT NULL AND sector_inicial_final NOT IN (
+    'Diseño Gráfico', 'Taller de Imprenta', 'Taller Gráfico', 'Instalaciones', 
+    'Metalúrgica', 'Mostrador', 'Caja', 'Diseño en Proceso', 'En Espera',
+    'Imprenta (Área de Impresión)', 'Finalizado en Taller', 'Almacén de Entrega'
+  ) THEN
+    RAISE WARNING 'Sector inicial "%" no está en la lista permitida, usando "Diseño Gráfico"', sector_inicial_final;
+    sector_inicial_final := 'Diseño Gráfico';
+  END IF;
+  
   -- Insertar la orden con todos los campos
   INSERT INTO public.ordenes_trabajo (
     numero_op,
